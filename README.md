@@ -10,4 +10,3 @@ Purpose of this project is to create a portfolio manager that can be used to tra
 - :paperclip: Integrate with Google Finance / Yahoo Stock to get stock data and news.
 - :framed_picture: Create web interface to display portfolio performance and news.
 - :electric_plug: Connect database to web interface.
-
