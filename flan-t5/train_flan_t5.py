@@ -1,7 +1,7 @@
 from typing import Callable, Dict
 
 import torch
-from datasets import load_dataset
+from datasets import DatasetDict, load_dataset
 from peft import LoraConfig, get_peft_model
 from transformers import AutoTokenizer, T5ForConditionalGeneration, Trainer, TrainingArguments
 
@@ -65,6 +65,33 @@ def generate_prompt(dataset_record: Dict[str, str], tokenizer: Callable) -> Dict
     return dataset_record
 
 
+def prepare_dataset(name: str, tokenizer: Callable) -> DatasetDict:
+    """
+    Preprocess the dataset for training and testing.
+
+    Args:
+        name (str): Name of the dataset to load.
+        tokenizer (Callable): Tokenizer callable to tokenize the prompt.
+
+    Returns:
+        DatasetDict: Preprocessed dataset.
+    """
+    dataset = load_dataset(name)["train"]
+    dataset = dataset.filter(
+        lambda x: len(x["input"]) + len(x["instruction"]) < 512 and len(x["output"]) < 512,
+        num_proc=6,
+    )
+
+    dataset = dataset.map(generate_prompt, fn_kwargs={"tokenizer": tokenizer}, num_proc=6)
+    dataset = dataset.remove_columns(["input", "output", "instruction", "text"])
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
+
+    print(f"Training data shape: {dataset['train'].shape}")
+    print(f"Test data shape: {dataset['test'].shape}")
+
+    return dataset
+
+
 if __name__ == "__main__":
     import os
     import pickle
@@ -87,15 +114,7 @@ if __name__ == "__main__":
     lora_model = get_peft_model(model, lora_config)
 
     print("Loading dataset...")
-    dataset = load_dataset(DATASET)["train"]
-    dataset = dataset.filter(
-        lambda x: len(x["input"]) + len(x["instruction"]) < 512 and len(x["output"]) < 512,
-        num_proc=6,
-    )
-
-    dataset = dataset.map(generate_prompt, fn_kwargs={"tokenizer": tokenizer}, num_proc=6)
-    dataset = dataset.remove_columns(["input", "output", "instruction", "text"])
-    dataset = dataset.train_test_split(test_size=0.1, shuffle=True)
+    dataset = prepare_dataset(DATASET, tokenizer)
 
     print(f"Training data shape: {dataset['train'].shape}")
     print(f"Test data shape: {dataset['test'].shape}")
