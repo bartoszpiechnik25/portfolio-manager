@@ -2,11 +2,16 @@ from typing import Callable, Dict
 
 import torch
 from datasets import DatasetDict, load_dataset
-from peft import LoraConfig, get_peft_model
-from transformers import AutoTokenizer, T5ForConditionalGeneration, Trainer, TrainingArguments
+from peft import LoraConfig, PeftModel, get_peft_model
+from transformers import (
+    AutoTokenizer,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    T5ForConditionalGeneration,
+)
 
 MODEL_NAME = "google/flan-t5-large"
-LORA_PATH = "./models/lora"
+LORA_PATH = f"./models/lora-{MODEL_NAME.split('/')[-1]}-finance-alpaca"
 TRAIN_DIR = "./models/checkpoints-local"
 DATASET = "gbharti/finance-alpaca"
 
@@ -47,20 +52,19 @@ def generate_prompt(dataset_record: Dict[str, str], tokenizer: Callable) -> Dict
         Dict[str, torch.Tensor]: Dictionary with the input_ids and labels for the model.
     """
 
-    if len(dataset_record["input"]):
-        prompt = f"{dataset_record['instruction']}\n\n{dataset_record['input']}\n\nAnswer: "
-    else:
-        prompt = f"{dataset_record['instruction']}\n\nAnswer: "
+    prompt = f"Answer the following question.\n{dataset_record['instruction']}\n\nAnswer: "
 
     dataset_record["input_ids"] = tokenizer(
         prompt, return_tensors="pt", truncation=True, padding="max_length"
     ).input_ids.squeeze(0)
-    dataset_record["labels"] = tokenizer(
+    label_input_ids = tokenizer(
         dataset_record["output"],
         return_tensors="pt",
         padding="max_length",
         truncation=True,
     ).input_ids.squeeze(0)
+    # Set label padding token to -100 so that it is ignored in the loss function
+    dataset_record["labels"] = label_input_ids.masked_fill(label_input_ids == 0, -100)
 
     return dataset_record
 
@@ -78,7 +82,9 @@ def prepare_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     """
     dataset = load_dataset(name)["train"]
     dataset = dataset.filter(
-        lambda x: len(x["input"]) + len(x["instruction"]) < 512 and len(x["output"]) < 512,
+        lambda x: len(x["instruction"].split(" ")) < 512
+        and len(x["output"].split(" ")) < 512
+        and len(x["input"]) == 0,
         num_proc=6,
     )
 
@@ -102,16 +108,19 @@ if __name__ == "__main__":
     model = T5ForConditionalGeneration.from_pretrained(MODEL_NAME, torch_dtype=torch.bfloat16)
 
     print("Creating LoRA model...")
-    lora_config = LoraConfig(
-        r=32,
-        task_type="SEQ_2_SEQ_LM",
-        lora_dropout=0.05,
-        lora_alpha=32,
-        target_modules=["q", "v"],
-        bias="lora_only",
-    )
+    if os.path.isdir(LORA_PATH):
+        model = PeftModel.from_pretrained(model, LORA_PATH, is_trainable=True)
+    else:
+        lora_config = LoraConfig(
+            r=32,
+            task_type="SEQ_2_SEQ_LM",
+            lora_dropout=0.1,
+            lora_alpha=32,
+            target_modules=["q", "v"],
+            bias="all",
+        )
 
-    lora_model = get_peft_model(model, lora_config)
+        model = get_peft_model(model, lora_config)
 
     print("Loading dataset...")
     dataset = prepare_dataset(DATASET, tokenizer)
@@ -120,48 +129,50 @@ if __name__ == "__main__":
     print(f"Test data shape: {dataset['test'].shape}")
 
     t = str(int(time.time()))
-    out_dir = TRAIN_DIR + f"/lora-flan-t5-large-{t}"
+    out_dir = TRAIN_DIR + f"/lora-{MODEL_NAME.split('/')[-1]}-{t}"
 
-    training_args = TrainingArguments(
-        learning_rate=1e-4,
+    training_args = Seq2SeqTrainingArguments(
+        learning_rate=1e-3,
+        lr_scheduler_type="cosine",
         num_train_epochs=1,
         auto_find_batch_size=True,
-        weight_decay=0.01,
+        gradient_accumulation_steps=32,
         output_dir=out_dir,
-        gradient_accumulation_steps=8,
         optim="adamw_torch",
-        logging_steps=30,
+        logging_steps=50,
         logging_strategy="steps",
         logging_first_step=True,
-        save_strategy="steps",
-        save_steps=500,
+        save_strategy="epoch",
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        evaluation_strategy="steps",
-        eval_steps=500,
+        evaluation_strategy="epoch",
     )
 
-    print("Memory footprint of FLAN-T5-large with LoRA layers: " + f"{lora_model.get_memory_footprint()*1e-9:.2f} GB")
+    print(
+        f"Memory footprint of {MODEL_NAME.split('/')[-1]} with LoRA layers: "
+        + f"{model.get_memory_footprint()*1e-9:.2f} GB"
+    )
 
-    trainer = Trainer(
-        model=lora_model,
+    trainer = Seq2SeqTrainer(
+        model=model,
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["test"],
     )
 
-    print_trainable_parameters(lora_model)
+    print_trainable_parameters(model)
 
     print("Training...")
     trainer.train()
 
     logs_dir = out_dir + "/logs"
     if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir)
+        os.makedirs(logs_dir, exist_ok=True)
 
     with open(logs_dir + "/log_metrics.pkl", "wb") as f:
         pickle.dump(trainer.state.log_history, f)
 
     print("Saving model...")
     trainer.save_model(LORA_PATH)
+    trainer.save_state()
