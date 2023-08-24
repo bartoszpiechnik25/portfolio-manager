@@ -43,5 +43,4 @@ Dataset used for fine-tunning to generate SQL queries from text was [Text2SQL](h
 
 ## Future work
 
-- Try to "teach" this model SQL queries to retrieve information from the database.
 - Further fine-tuning to summarize financial articles and chat with users.
