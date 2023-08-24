@@ -10,7 +10,7 @@ After some tests I decided to use FLAN-T5-large because perfomance "out of the b
 
 ### Training loss curve (finance-alpaca dataset)
 
-![Training loss curve](./models//lora-flan-t5-large-finance-alpaca/2-epochs.png)
+![Training loss curve](./plots//lora_flan_t5_large/2_epochs.png)
 
 ```cpp
 Training data shape: (43441, 2)
