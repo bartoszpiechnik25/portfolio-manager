@@ -1,6 +1,7 @@
 from typing import Callable, Dict
 
 import torch
+import random
 from datasets import DatasetDict, load_dataset
 from peft import LoraConfig, PeftModel, get_peft_model
 from transformers import (
@@ -11,9 +12,9 @@ from transformers import (
 )
 
 MODEL_NAME = "google/flan-t5-large"
-LORA_PATH = f"./models/lora-{MODEL_NAME.split('/')[-1]}-finance-alpaca"
-TRAIN_DIR = "./models/checkpoints-local"
-DATASET = "gbharti/finance-alpaca"
+DATASET = "b-mc2/sql-create-context"
+LORA_PATH = f"./models/lora_{MODEL_NAME.split('/')[-1]}_{DATASET.split('/')[-1]}"
+TRAIN_DIR = "./models/checkpoints_local"
 
 
 def print_trainable_parameters(model: torch.nn.Module) -> None:
@@ -40,36 +41,44 @@ def print_trainable_parameters(model: torch.nn.Module) -> None:
     )
 
 
-def generate_prompt(dataset_record: Dict[str, str], tokenizer: Callable) -> Dict[str, torch.Tensor]:
+def generate_prompt(
+    dataset_record: Dict[str, str],
+    tokenizer: Callable,
+    prompt_cloumn: str = "prompt",
+    ans_column: str = "output",
+    max_prompt_len: int = 512,
+    max_ans_len: int = 512,
+) -> Dict[str, torch.Tensor]:
     """
-    Generate the prompt for the model and tokenizes it.
-
-    Args:
-        dataset_record (Dict[str, str]): Record from the dataset to generate the prompt.
-        tokenizer (AutoTokenizer): Tokenizer callable to tokenize the prompt.
+    Generate the prompt for the model.
 
     Returns:
-        Dict[str, torch.Tensor]: Dictionary with the input_ids and labels for the model.
+        Dict[str, torch.Tensor]: Record with the prompt and the answer tokenized.
     """
 
-    prompt = f"Answer the following question.\n{dataset_record['instruction']}\n\nAnswer: "
-
     dataset_record["input_ids"] = tokenizer(
-        prompt, return_tensors="pt", truncation=True, padding="max_length"
+        dataset_record[prompt_cloumn],
+        return_tensors="pt",
+        truncation=True,
+        padding="max_length",
+        max_length=max_prompt_len,
     ).input_ids.squeeze(0)
+
     label_input_ids = tokenizer(
-        dataset_record["output"],
+        dataset_record[ans_column],
         return_tensors="pt",
         padding="max_length",
+        max_length=max_ans_len,
         truncation=True,
     ).input_ids.squeeze(0)
+
     # Set label padding token to -100 so that it is ignored in the loss function
     dataset_record["labels"] = label_input_ids.masked_fill(label_input_ids == 0, -100)
 
     return dataset_record
 
 
-def prepare_dataset(name: str, tokenizer: Callable) -> DatasetDict:
+def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     """
     Preprocess the dataset for training and testing.
 
@@ -98,6 +107,59 @@ def prepare_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     return dataset
 
 
+def prepare_sql2text_dataset(dataset_name: str, tokenizer: Callable) -> DatasetDict:
+    """
+    Prepare the dataset for training and testing.
+
+    Returns:
+        DatasetDict: Preprocessed dataset.
+    """
+    dataset = load_dataset(dataset_name)["train"]
+    prompt = "{}\n{}\nGenerate SQL query to answer the folowing question.\n{}\nAnswer: "
+    start = [
+        "Given the context.",
+        "Given the following table.",
+        "Given SQL code to create a table.",
+        "Given the following SQL code.",
+        "Consider the SQL code below:",
+        "Review the following SQL snippet:",
+        "Examine the table creation query provided:",
+        "Take a look at the SQL code segment:",
+        "Here's an SQL snippet defining a table:",
+        "Below is an SQL statement for creating a table:",
+        "Provided is an SQL code snippet that creates a table:",
+        "Explore the given SQL code for table creation:",
+        "Given the subsequent SQL code for table setup:",
+        "The following SQL code demonstrates table creation:",
+    ]
+
+    def process(x):
+        prompt_beginning = random.choice(start)
+        d = {"prompt": prompt.format(prompt_beginning, x["context"], x["question"])}
+        d["len"] = len(d["prompt"].split(" "))
+        d["ans_len"] = len(x["answer"].split(" "))
+        return d
+
+    dataset = dataset.map(lambda x: process(x), num_proc=12)
+    # add 15 to max len to account for ., ?, !, etc.
+    max_prompt_len, max_ans_len = max(dataset["len"]) + 20, max(dataset["ans_len"]) + 20
+    dataset = dataset.map(
+        generate_prompt,
+        fn_kwargs={
+            "tokenizer": tokenizer,
+            "max_prompt_len": max_prompt_len,
+            "max_ans_len": max_ans_len,
+            "ans_column": "answer",
+        },
+        num_proc=12,
+    )
+    dataset = dataset.remove_columns(["len", "ans_len", "context", "question", "answer", "prompt"])
+    dataset.set_format(type="torch", columns=["input_ids", "labels"])
+    dataset = dataset.train_test_split(test_size=0.2, shuffle=True, seed=2137)
+
+    return dataset
+
+
 if __name__ == "__main__":
     import os
     import pickle
@@ -109,21 +171,26 @@ if __name__ == "__main__":
 
     print("Creating LoRA model...")
     if os.path.isdir(LORA_PATH):
+        print("Loading existing LoRA model...")
         model = PeftModel.from_pretrained(model, LORA_PATH, is_trainable=True)
     else:
+        print("Creating new LoRA model...")
         lora_config = LoraConfig(
-            r=32,
+            r=16,
             task_type="SEQ_2_SEQ_LM",
             lora_dropout=0.1,
             lora_alpha=32,
-            target_modules=["q", "v"],
+            target_modules=["q", "v", "o"],
             bias="all",
         )
 
         model = get_peft_model(model, lora_config)
 
     print("Loading dataset...")
-    dataset = prepare_dataset(DATASET, tokenizer)
+    if DATASET == "b-mc2/sql-create-context":
+        dataset = prepare_sql2text_dataset(DATASET, tokenizer)
+    else:
+        dataset = prepare_qa_dataset(DATASET, tokenizer)
 
     print(f"Training data shape: {dataset['train'].shape}")
     print(f"Test data shape: {dataset['test'].shape}")
@@ -134,12 +201,12 @@ if __name__ == "__main__":
     training_args = Seq2SeqTrainingArguments(
         learning_rate=1e-3,
         lr_scheduler_type="cosine",
-        num_train_epochs=1,
+        num_train_epochs=3,
         auto_find_batch_size=True,
-        gradient_accumulation_steps=32,
+        gradient_accumulation_steps=8,
         output_dir=out_dir,
         optim="adamw_torch",
-        logging_steps=50,
+        logging_steps=40,
         logging_strategy="steps",
         logging_first_step=True,
         save_strategy="epoch",
