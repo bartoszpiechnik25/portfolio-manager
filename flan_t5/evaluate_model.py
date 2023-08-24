@@ -9,7 +9,7 @@ from train_flan_t5 import (
     DATASET,
     LORA_PATH,
     MODEL_NAME,
-    prepare_dataset,
+    prepare_sql2text_dataset,
     print_trainable_parameters,
 )
 from transformers import AutoTokenizer, GenerationConfig, T5ForConditionalGeneration
@@ -41,14 +41,15 @@ def evaluate_test(
     with torch.no_grad():
         for i in tqdm.tqdm(range(0, len(dataset) // batch_size), desc="Evaluating"):
             data = dataset[i * batch_size : (i + 1) * batch_size]
-            input_ids = torch.tensor(data["input_ids"], device="cuda:0")
-            labels = torch.tensor(data["labels"])
             # fill -100 (token used for training) with pad token
-            labels.masked_fill_(labels == -100, tokenizer.pad_token_id)
-            human_generated.extend(tokenizer.batch_decode(labels, skip_special_tokens=True))
+            data["labels"].masked_fill_(data["labels"] == -100, tokenizer.pad_token_id)
+            human_generated.extend(tokenizer.batch_decode(data["labels"], skip_special_tokens=True))
 
-            generated_ids = model.generate(input_ids=input_ids, generation_config=config)
+            generated_ids = model.generate(
+                input_ids=data["input_ids"].to("cuda"), generation_config=config
+            )
             model_results.extend(tokenizer.batch_decode(generated_ids, skip_special_tokens=True))
+            del data, generated_ids
 
     return model_results, human_generated
 
@@ -59,7 +60,7 @@ if __name__ == "__main__":
     model = T5ForConditionalGeneration.from_pretrained(
         MODEL_NAME, torch_dtype=torch.bfloat16, device_map="cuda:0"
     )
-    dataset = prepare_dataset(DATASET, tokenizer)
+    dataset = prepare_sql2text_dataset(DATASET, tokenizer)
     model = PeftModel.from_pretrained(model, LORA_PATH)
 
     print_trainable_parameters(model)
