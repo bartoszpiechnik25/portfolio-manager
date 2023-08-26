@@ -75,6 +75,7 @@ if __name__ == "__main__":
     model = T5ForConditionalGeneration.from_pretrained(
         MODEL_NAME, torch_dtype=torch.bfloat16, device_map="cuda:0"
     )
+    model.eval()
     baseline_generated, baseline_human = evaluate_test(
         model, tokenizer, config, dataset["test"], batch_size=64
     )
