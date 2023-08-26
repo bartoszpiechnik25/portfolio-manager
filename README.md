@@ -13,4 +13,4 @@ Purpose of this project is to create a portfolio manager that can be used to tra
 
 ## Progress
 
-- :white_check_mark: Fine-tune FLAN-T5 to answer financial questions (see [flan_t5](./flan_t5/FINE_TUNING.md)).
+- :white_check_mark: :white_check_mark: :white_large_square: Fine-tune FLAN-T5 to answer financial questions and generate SQL queries. (see [fine-tuning](./flan_t5/FINE_TUNING.md)).
