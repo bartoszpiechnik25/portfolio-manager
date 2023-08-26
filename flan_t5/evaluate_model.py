@@ -2,15 +2,16 @@ from typing import List, Tuple, Union
 
 import torch
 import tqdm
-from datasets import DatasetDict
+from datasets import DatasetDict, load_dataset, concatenate_datasets
 from evaluate import load
 from peft import PeftModel
 from train_flan_t5 import (
     DATASET,
     LORA_PATH,
     MODEL_NAME,
-    prepare_sql2text_dataset,
+    prepare_text2sql_dataset,
     print_trainable_parameters,
+    preprocess_llama2_text2sql_dataset,
 )
 from transformers import AutoTokenizer, GenerationConfig, T5ForConditionalGeneration
 
@@ -60,7 +61,16 @@ if __name__ == "__main__":
     model = T5ForConditionalGeneration.from_pretrained(
         MODEL_NAME, torch_dtype=torch.bfloat16, device_map="cuda:0"
     )
-    dataset = prepare_sql2text_dataset(DATASET, tokenizer)
+    if DATASET == "ChrisHayduk/Llama-2-SQL-Dataset":
+        dataset = load_dataset(DATASET)
+        dataset = concatenate_datasets([dataset["train"], dataset["eval"]])
+        dataset = dataset.map(
+            preprocess_llama2_text2sql_dataset, num_proc=12, remove_columns=["input", "output"]
+        )
+        dataset = prepare_text2sql_dataset(DATASET, tokenizer, dataset)
+    else:
+        dataset = prepare_text2sql_dataset(DATASET, tokenizer)
+
     model = PeftModel.from_pretrained(model, LORA_PATH)
 
     print_trainable_parameters(model)

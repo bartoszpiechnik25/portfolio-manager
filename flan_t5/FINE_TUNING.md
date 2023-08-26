@@ -12,7 +12,7 @@ After some tests I decided to use FLAN-T5-large because perfomance "out of the b
 
 #### Training loss curve
 
-![Training loss curve](./plots/lora_flan_t5_large/2_epochs.png)
+![Training loss curve](./plots/financial_qa_2_epochs.png)
 
 ```cpp
 Training data shape: (43441, 2)
@@ -32,14 +32,29 @@ Trainable parameters 9,437,184 || All parameters 792,587,264 || Trainable parame
 
 Dataset used for fine-tunning to generate SQL queries from text was [Text2SQL](https://huggingface.co/datasets/b-mc2/sql-create-context). Thanks to smaller number of tokens (mostly < 100) in the context I was able to run training for 3 epochs on my GPU, training took approximately 6 hours.
 
-#### Training loss curve (Text2SQL)
+#### SQL-CREATE-CONTEXT dataset
 
-![Training loss curve](./plots/lora_flan_t5_large_sql/3-epochs.png)
+##### Training loss curve (Text2SQL)
+
+![Training loss curve](./plots/text2sql_3-epochs.png)
 
 || Rouge-1 | Rouge-2 | Rouge-L | Rouge-Lsum |
 |---|---------|---------|---------|---------|
 | LoRA Model | 0.9879 | 0.9879 | 0.9879 | 0.9879 |
 | Base Model | 0.2554 | 0.1066| 0.2200 | 0.2200 |
+
+#### Llama-2-SQL-dataset
+
+Model weights achieved in the previous fine-tuning on the dataset mentioned above were used to further fine-tune and imporve model's ability to generate SQL queries from text. Dataset used for this task was [Llama-2 SQL](https://huggingface.co/datasets/ChrisHayduk/Llama-2-SQL-Dataset).
+
+##### Training loss curve (Llama-2 SQL Dataset) - 2 epochs
+
+![Training loss curve](./plots/llama2sql_2-epochs.png)
+
+|| Rouge-1 | Rouge-2 | Rouge-L | Rouge-Lsum |
+|---|---------|---------|---------|---------|
+| LoRA Model | 0.9891 | 0.9774 | 0.9868 | 0.9867 |
+| Base Model | 0.2535 | 0.1065 | 0.2188 | 0.2188 |
 
 ## Future work
 
