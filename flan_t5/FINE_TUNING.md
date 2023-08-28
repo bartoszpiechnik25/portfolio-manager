@@ -47,14 +47,18 @@ Dataset used for fine-tunning to generate SQL queries from text was [Text2SQL](h
 
 Model weights achieved in the previous fine-tuning on the dataset mentioned above were used to further fine-tune and imporve model's ability to generate SQL queries from text. Dataset used for this task was [Llama-2 SQL](https://huggingface.co/datasets/ChrisHayduk/Llama-2-SQL-Dataset).
 
-##### Training loss curve (Llama-2 SQL Dataset) - 2 epochs
+##### Training loss curve (Llama-2 SQL Dataset)
 
 ![Training loss curve](./plots/llama2sql_2-epochs.png)
 
+##### Validation loss curve (Llama-2 SQL Dataset)
+
+![Validation loss curve](./plots/llama2sql_2-epochs_eval.png)
+
 || Rouge-1 | Rouge-2 | Rouge-L | Rouge-Lsum |
 |---|---------|---------|---------|---------|
-| LoRA Model | 0.9891 | 0.9774 | 0.9868 | 0.9867 |
-| Base Model | 0.2535 | 0.1065 | 0.2188 | 0.2188 |
+| LoRA Model | 0.9931 | 0.9832 | 0.9909 | 0.9909 |
+| Base Model | 0.1912 | 0.0771 | 0.1775 | 0.1777 |
 
 ## Future work
 

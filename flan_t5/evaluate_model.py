@@ -81,6 +81,10 @@ if __name__ == "__main__":
 
     generated, human = evaluate_test(model, tokenizer, config, dataset["test"], batch_size=64)
     lora_result = rouge.compute(predictions=generated, references=human, use_stemmer=True)
+    print(f"Fine-tuned model: {lora_result}")
+
+    del model
+    torch.cuda.empty_cache()
 
     model = T5ForConditionalGeneration.from_pretrained(
         MODEL_NAME, torch_dtype=torch.bfloat16, device_map="cuda:0"
@@ -94,4 +98,3 @@ if __name__ == "__main__":
     )
 
     print(f"Baseline model: {baseline_result}")
-    print(f"Fine-tuned model: {lora_result}")

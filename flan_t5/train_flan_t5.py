@@ -14,7 +14,7 @@ from transformers import (
 )
 
 MODEL_NAME = "google/flan-t5-large"
-DATASET = "ChrisHayduk/Llama-2-SQL-Dataset"
+DATASET = "gbharti/finance-alpaca"
 LORA_PATH = f"./models/lora_{MODEL_NAME.split('/')[-1]}_{DATASET.split('/')[-1]}"
 TRAIN_DIR = "./models/checkpoints_local"
 HEADS = [
@@ -34,6 +34,7 @@ HEADS = [
     "The following SQL code demonstrates table creation:",
 ]
 PERCENTILE = 99.9
+ANS_PERCENTILE = 97
 
 
 def print_trainable_parameters(model: torch.nn.Module) -> None:
@@ -126,7 +127,7 @@ def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     dataset = dataset.map(lambda x: process(x), num_proc=12)
     max_prompt_len = int(np.percentile(dataset["len"], PERCENTILE))
     print(f"Max prompt length: {max_prompt_len}")
-    max_ans_len = int(np.percentile(dataset["ans_len"], 95))
+    max_ans_len = int(np.percentile(dataset["ans_len"], ANS_PERCENTILE))
     print(f"Max answer length: {max_ans_len}")
 
     dataset = dataset.filter(
@@ -144,6 +145,8 @@ def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     dataset = dataset.remove_columns(
         ["input", "output", "instruction", "text", "len", "ans_len", "prompt"]
     )
+    dataset.set_format(type="torch", columns=["input_ids", "labels"])
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
 
     return dataset
 
@@ -226,7 +229,6 @@ def preprocess_llama2_text2sql_dataset(record: Dict[str, str]) -> Dict[str, str]
 
 if __name__ == "__main__":
     import os
-    import pickle
     import time
 
     print("Loading model and tokenizer...")
@@ -248,7 +250,7 @@ if __name__ == "__main__":
         lora_config = LoraConfig(
             r=16,
             task_type="SEQ_2_SEQ_LM",
-            lora_dropout=0.1,
+            lora_dropout=0.05,
             lora_alpha=32,
             target_modules=["q", "v", "o"],
             bias="all",
@@ -276,9 +278,9 @@ if __name__ == "__main__":
     out_dir = TRAIN_DIR + f"/lora-{MODEL_NAME.split('/')[-1]}-{t}"
 
     training_args = Seq2SeqTrainingArguments(
-        learning_rate=3e-4,
+        learning_rate=3e-3,
         lr_scheduler_type="cosine",
-        num_train_epochs=2,
+        num_train_epochs=1,
         auto_find_batch_size=True,
         gradient_accumulation_steps=8,
         output_dir=out_dir,
@@ -309,13 +311,6 @@ if __name__ == "__main__":
 
     print("Training...")
     trainer.train()
-
-    logs_dir = out_dir + "/logs"
-    if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir, exist_ok=True)
-
-    with open(logs_dir + "/log_metrics.pkl", "wb") as f:
-        pickle.dump(trainer.state.log_history, f)
 
     print("Saving model...")
     trainer.save_model(LORA_PATH)
