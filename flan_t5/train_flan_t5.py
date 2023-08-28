@@ -2,6 +2,7 @@ from typing import Callable, Dict
 
 import torch
 import re
+import numpy as np
 import random
 from datasets import DatasetDict, Dataset, load_dataset, concatenate_datasets
 from peft import LoraConfig, PeftModel, get_peft_model
@@ -32,6 +33,7 @@ HEADS = [
     "Given the subsequent SQL code for table setup:",
     "The following SQL code demonstrates table creation:",
 ]
+PERCENTILE = 99.9
 
 
 def print_trainable_parameters(model: torch.nn.Module) -> None:
@@ -106,17 +108,42 @@ def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     Returns:
         DatasetDict: Preprocessed dataset.
     """
-    dataset = load_dataset(name)["train"]
-    dataset = dataset.filter(
-        lambda x: len(x["instruction"].split(" ")) < 512
-        and len(x["output"].split(" ")) < 512
-        and len(x["input"]) == 0,
-        num_proc=6,
-    )
+    qa_prompt = "{}\nAnswer: "
+    instruct_prompt = "Given the context.\n{}\n{}\nAnswer: "
 
-    dataset = dataset.map(generate_prompt, fn_kwargs={"tokenizer": tokenizer}, num_proc=6)
-    dataset = dataset.remove_columns(["input", "output", "instruction", "text"])
-    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
+    def process(x, tok=tokenizer):
+        p = None
+        if len(x["input"]) == 0:
+            p = qa_prompt.format(x["instruction"])
+        else:
+            p = instruct_prompt.format(x["input"], x["instruction"])
+        d = {"prompt": p}
+        d["len"] = tok(d["prompt"], return_length=True)["length"][0]
+        d["ans_len"] = tok(x["output"], return_length=True)["length"][0]
+        return d
+
+    dataset = load_dataset(name)["train"]
+    dataset = dataset.map(lambda x: process(x), num_proc=12)
+    max_prompt_len = int(np.percentile(dataset["len"], PERCENTILE))
+    print(f"Max prompt length: {max_prompt_len}")
+    max_ans_len = int(np.percentile(dataset["ans_len"], 95))
+    print(f"Max answer length: {max_ans_len}")
+
+    dataset = dataset.filter(
+        lambda x: x["len"] <= max_prompt_len and x["ans_len"] <= max_ans_len, num_proc=12
+    )
+    dataset = dataset.map(
+        generate_prompt,
+        fn_kwargs={
+            "tokenizer": tokenizer,
+            "max_prompt_len": max_prompt_len,
+            "max_ans_len": max_ans_len,
+        },
+        num_proc=12,
+    )
+    dataset = dataset.remove_columns(
+        ["input", "output", "instruction", "text", "len", "ans_len", "prompt"]
+    )
 
     return dataset
 
@@ -137,16 +164,26 @@ def prepare_text2sql_dataset(
     )
     prompt = "{}\n{}\nGenerate SQL query to answer the folowing question.\n{}\nAnswer: "
 
-    def process(x):
+    def process(x, tok=tokenizer):
         prompt_beginning = random.choice(HEADS)
         d = {"prompt": prompt.format(prompt_beginning, x["context"], x["question"])}
-        d["len"] = len(d["prompt"].split(" "))
-        d["ans_len"] = len(x["answer"].split(" "))
+        d["len"] = tok(d["prompt"], return_tensors="pt").input_ids.shape[1]
+        d["ans_len"] = tok(x["answer"], return_tensors="pt").input_ids.shape[1]
         return d
 
     dataset = dataset.map(lambda x: process(x), num_proc=12)
-    # add 15 to max len to account for ., ?, !, etc.
-    max_prompt_len, max_ans_len = max(dataset["len"]) + 20, max(dataset["ans_len"]) + 20
+
+    # select prompts lying in PERCENTILE of prompts lengths (better memory usage)
+    # because having lets say one prompt that length is 400 will make every prompt
+    # having length 400 due to padding so we will unecessarily process a lot of zeros.
+    max_prompt_len = int(np.percentile(dataset["len"], PERCENTILE))
+    print(f"Max prompt length: {max_prompt_len}")
+    max_ans_len = int(np.percentile(dataset["ans_len"], PERCENTILE))
+    print(f"Max answer length: {max_ans_len}")
+
+    dataset = dataset.filter(
+        lambda x: x["len"] <= max_prompt_len and x["ans_len"] <= max_ans_len, num_proc=12
+    )
     dataset = dataset.map(
         generate_prompt,
         fn_kwargs={
@@ -159,7 +196,7 @@ def prepare_text2sql_dataset(
     )
     dataset = dataset.remove_columns(["len", "ans_len", "context", "question", "answer", "prompt"])
     dataset.set_format(type="torch", columns=["input_ids", "labels"])
-    dataset = dataset.train_test_split(test_size=0.2, shuffle=True, seed=2137)
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
 
     return dataset
 
