@@ -8,6 +8,8 @@ Training was done locally on my PC on GTX 1080Ti 12GB VRAM using Low Rank Adapta
 
 After some tests I decided to use FLAN-T5-large because perfomance "out of the box" (without fine-tuning) was better than FLAN-T5-base after fine tunning with LoRA.
 
+I was also considering using 'google/flan-t5-xl' (3B parameter model) and fine-tune it with QLoRA in 4bit precision, but loading such model requires GPU and my cloud machine that will host the model has only CPU.
+
 ### Financial QA task
 
 #### Training loss curve
