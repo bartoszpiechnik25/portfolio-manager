@@ -5,7 +5,7 @@ import os
 p = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join("/", *p.split("/")[:-1]))
 
-from api.main.resources.sql_resource import app
+from api.main.resources.sql_resource import app, CONFIG
 
 test = """Given the SQL code.
 CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
@@ -24,13 +24,15 @@ class TestLLMController(unittest.TestCase):
         self.app = app.test_client()
 
     def test_sql_post(self):
-        response = self.app.post("/sql", json={"text": test})
+        response = self.app.post(CONFIG.TEX2SQL_ENDPOINT, json={"text": test})
         self.assertEqual(response.status_code, 200)
         self.assertIn("generated_text", response.json)
         self.assertIsInstance(response.json["generated_text"], list)
 
     def test_shouldReturnErrorWhenIncorrectData(self):
-        response = self.app.post("/sql", json={"text": test, "num_return_sequences": 3})
+        response = self.app.post(
+            CONFIG.TEX2SQL_ENDPOINT, json={"text": test, "num_return_sequences": 3}
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn("message", response.json)
 

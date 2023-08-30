@@ -9,6 +9,7 @@ if p not in sys.path:
     sys.path.append(p)
 
 from model.llm import LLM, LLMType, GenerationConfig
+from config import CONFIG
 from common.util import create_sql_parser, t5_sql_response
 
 
@@ -37,7 +38,9 @@ sql_model = LLM(LLMType.SQL)
 sql_parser = create_sql_parser()
 
 api.add_resource(
-    LLMController, "/text2sql", resource_class_kwargs={"model": sql_model, "parser": sql_parser}
+    LLMController,
+    CONFIG.TEX2SQL_ENDPOINT,
+    resource_class_kwargs={"model": sql_model, "parser": sql_parser},
 )
 # api.add_resource(LLMController, "/qa")
 
