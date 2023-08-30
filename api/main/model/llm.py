@@ -54,7 +54,7 @@ class LLM:
             verbose=False,
         )
         if tokenized_input["length"][0] > self.tokenizer.model_max_length:
-            tokenized_input["warning"] = (
+            tokenized_input["tokenizer_warning"] = (
                 f"Input text longer than {self.tokenizer.model_max_length} "
                 + "tokens output might be inaccurate due to truncation."
             )
@@ -79,7 +79,7 @@ class LLM:
         )
         response = {
             "generated_text": self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True),
-            "warning": input.get("warning", ""),
+            "tokenizer_warning": input.get("tokenizer_warning", None),
         }
         return response
 

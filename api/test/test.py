@@ -5,7 +5,7 @@ import os
 p = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join("/", *p.split("/")[:-1]))
 
-from main.controller.api import app
+from api.main.resources.sql_resource import app
 
 test = """Given the SQL code.
 CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
