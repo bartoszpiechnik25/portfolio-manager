@@ -1,14 +1,8 @@
-import sys
-import os
 import torch
 from transformers import T5ForConditionalGeneration, AutoTokenizer, GenerationConfig, BatchEncoding
 from peft import PeftConfig, PeftModel
 from typing import List, Union, Dict
-
-p = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(os.path.join("/", *p.split("/")[:-1]))
-
-from config import LLMType, mapping
+from api.main.config import LLMType, mapping
 
 
 class LLM:
@@ -82,6 +76,24 @@ class LLM:
             "tokenizer_warning": input.get("tokenizer_warning", None),
         }
         return response
+
+    @staticmethod
+    def create_prompt(table: str, question: str) -> str:
+        """
+        Create the prompt for the model.
+
+        Args:
+            table (str): SQL table.
+            question (str): Question.
+
+        Returns:
+            str: Prompt for the model.
+        """
+        table = table.strip()
+        question = question.strip()
+        start = "Given the SQL code.\n"
+        end = f"Generate the SQL code to answer the following question.\n{question}"
+        return f"{start}{table}\n{end}\nAnswer:"
 
 
 if __name__ == "__main__":
