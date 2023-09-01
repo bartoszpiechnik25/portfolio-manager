@@ -14,7 +14,7 @@ from transformers import (
 )
 
 MODEL_NAME = "google/flan-t5-large"
-DATASET = "gbharti/finance-alpaca"
+DATASET = "cnn_dailymail"
 LORA_PATH = f"./models/lora_{MODEL_NAME.split('/')[-1]}_{DATASET.split('/')[-1]}"
 TRAIN_DIR = "./models/checkpoints_local"
 HEADS = [
@@ -64,7 +64,7 @@ def print_trainable_parameters(model: torch.nn.Module) -> None:
 def generate_prompt(
     dataset_record: Dict[str, str],
     tokenizer: Callable,
-    prompt_cloumn: str = "prompt",
+    prompt_column: str = "prompt",
     ans_column: str = "output",
     max_prompt_len: int = 512,
     max_ans_len: int = 512,
@@ -77,7 +77,7 @@ def generate_prompt(
     """
 
     dataset_record["input_ids"] = tokenizer(
-        dataset_record[prompt_cloumn],
+        dataset_record[prompt_column],
         return_tensors="pt",
         truncation=True,
         padding="max_length",
@@ -93,7 +93,9 @@ def generate_prompt(
     ).input_ids.squeeze(0)
 
     # Set label padding token to -100 so that it is ignored in the loss function
-    dataset_record["labels"] = label_input_ids.masked_fill(label_input_ids == 0, -100)
+    dataset_record["labels"] = label_input_ids.masked_fill(
+        label_input_ids == tokenizer.pad_token_id, -100
+    )
 
     return dataset_record
 
@@ -227,6 +229,48 @@ def preprocess_llama2_text2sql_dataset(record: Dict[str, str]) -> Dict[str, str]
     }
 
 
+def prepare_cnn_dataset(name: str, version: str, tokenizer: Callable) -> DatasetDict:
+    def preprocess_cnn_dataset(record: Dict[str, str]) -> Dict[str, str]:
+        record["article"] = f"Summarize the following article:\n{record['article']}\nSummary:"
+        record["article_len"] = tokenizer(record["article"], return_length=True, verbose=False)[
+            "length"
+        ][0]
+        record["highlights_len"] = tokenizer(
+            record["highlights"], return_length=True, verbose=False
+        )["length"][0]
+        return record
+
+    dataset = load_dataset(name, version)
+    dataset = concatenate_datasets([dataset["train"], dataset["validation"], dataset["test"]])
+    dataset = dataset.map(preprocess_cnn_dataset, num_proc=12)
+
+    dataset = dataset.filter(
+        lambda x: x["article_len"] <= 512 and x["highlights_len"] <= 512,
+        num_proc=12,
+    )
+
+    max_prompt_len = max(dataset["article_len"])
+    max_ans_len = max(dataset["highlights_len"])
+    print(f"Max prompt length: {max_prompt_len}")
+    print(f"Max answer length: {max_ans_len}")
+
+    dataset = dataset.map(
+        generate_prompt,
+        fn_kwargs={
+            "tokenizer": tokenizer,
+            "prompt_column": "article",
+            "ans_column": "highlights",
+            "max_prompt_len": max_prompt_len,
+            "max_ans_len": max_ans_len,
+        },
+        num_proc=12,
+        remove_columns=["article_len", "highlights_len", "id"],
+    )
+    dataset.set_format(type="torch", columns=["input_ids", "labels"])
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
+    return dataset
+
+
 if __name__ == "__main__":
     import os
     import time
@@ -268,6 +312,8 @@ if __name__ == "__main__":
             preprocess_llama2_text2sql_dataset, num_proc=12, remove_columns=["input", "output"]
         )
         dataset = prepare_text2sql_dataset(DATASET, tokenizer, dataset)
+    elif DATASET == "cnn_dailymail":
+        dataset = prepare_cnn_dataset(DATASET, "3.0.0", tokenizer)
     else:
         dataset = prepare_qa_dataset(DATASET, tokenizer)
 

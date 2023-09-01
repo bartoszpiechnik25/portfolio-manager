@@ -62,6 +62,19 @@ Model weights achieved in the previous fine-tuning on the dataset mentioned abov
 | LoRA Model | 0.9931 | 0.9832 | 0.9909 | 0.9909 |
 | Base Model | 0.1912 | 0.0771 | 0.1775 | 0.1777 |
 
+#### CNN_DailyMail dataset
+
+3rd model fine-tuning was done on the [CNN_DailyMail](https://huggingface.co/datasets/cnn_dailymail) dataset, which is a dataset for summarization task. Articles that were longet than context window (512 tokens) were truncated, which resulted in 40347 training examples and 4484 test examples.
+
+##### Training loss curve (CNN_DailyMail) - 2 epochs
+
+![Training loss curve](./plots/cnn_dailymail_2-epochs.png)
+
+|| Rouge-1 | Rouge-2 | Rouge-L | Rouge-Lsum |
+|---|---------|---------|---------|---------|
+| LoRA Model | 0.9891 | 0.9774 | 0.9868 | 0.9867 |
+| Base Model | 0.3492 | 0.1576 | 0.2582 | 0.2583 |
+
 ## Future work
 
 - Further fine-tuning to summarize financial articles and chat with users.
