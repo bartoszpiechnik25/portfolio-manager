@@ -1,5 +1,5 @@
 import unittest
-from api.main.resources.sql_resource import app, CONFIG
+from api.main.app import create_app, CONFIG
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
 CREATE TABLE management (department_id VARCHAR, head_id VARCHAR);
@@ -14,15 +14,15 @@ Answer:
 
 class TestLLMController(unittest.TestCase):
     def setUp(self):
-        self.app = app.test_client()
+        self.app = create_app().test_client()
 
     def test_sql_post(self):
         response = self.app.post(
             CONFIG.TEX2SQL_ENDPOINT, json={"sql_table": table, "question": question}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn("generated_text", response.json)
-        self.assertIsInstance(response.json["generated_text"], list)
+        self.assertIn("generated_sequence", response.json)
+        self.assertIsInstance(response.json["generated_sequence"], list)
 
     def test_shouldReturnErrorWhenIncorrectData(self):
         response = self.app.post(
@@ -31,6 +31,12 @@ class TestLLMController(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("message", response.json)
+
+    # def test_summary_post(self):
+    #     response = self.app.post(CONFIG.SUMMARY_ENDPOINT, json={"text": "Hello World!"})
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertIn("generated_sequence", response.json)
+    #     self.assertIsInstance(response.json["generated_sequence"], list)
 
 
 if __name__ == "__main__":

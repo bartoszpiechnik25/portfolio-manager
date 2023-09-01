@@ -72,28 +72,12 @@ class LLM:
             input_ids=input["input_ids"].to(self.model.device), generation_config=generation_config
         )
         response = {
-            "generated_text": self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True),
+            "generated_sequence": self.tokenizer.batch_decode(
+                generated_ids, skip_special_tokens=True
+            ),
             "tokenizer_warning": input.get("tokenizer_warning", None),
         }
         return response
-
-    @staticmethod
-    def create_prompt(table: str, question: str) -> str:
-        """
-        Create the prompt for the model.
-
-        Args:
-            table (str): SQL table.
-            question (str): Question.
-
-        Returns:
-            str: Prompt for the model.
-        """
-        table = table.strip()
-        question = question.strip()
-        start = "Given the SQL code.\n"
-        end = f"Generate the SQL code to answer the following question.\n{question}"
-        return f"{start}{table}\n{end}\nAnswer:"
 
 
 if __name__ == "__main__":
