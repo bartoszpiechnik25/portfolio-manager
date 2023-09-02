@@ -1,14 +1,8 @@
-import sys
-import os
 import torch
 from transformers import T5ForConditionalGeneration, AutoTokenizer, GenerationConfig, BatchEncoding
 from peft import PeftConfig, PeftModel
 from typing import List, Union, Dict
-
-p = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(os.path.join("/", *p.split("/")[:-1]))
-
-from config import LLMType, mapping
+from api.main.config import LLMType, mapping
 
 
 class LLM:
@@ -78,7 +72,9 @@ class LLM:
             input_ids=input["input_ids"].to(self.model.device), generation_config=generation_config
         )
         response = {
-            "generated_text": self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True),
+            "generated_sequence": self.tokenizer.batch_decode(
+                generated_ids, skip_special_tokens=True
+            ),
             "tokenizer_warning": input.get("tokenizer_warning", None),
         }
         return response

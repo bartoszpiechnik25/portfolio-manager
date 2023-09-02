@@ -12,6 +12,8 @@ from train_flan_t5 import (
     prepare_text2sql_dataset,
     print_trainable_parameters,
     preprocess_llama2_text2sql_dataset,
+    prepare_qa_dataset,
+    prepare_cnn_dataset,
 )
 from transformers import AutoTokenizer, GenerationConfig, T5ForConditionalGeneration
 
@@ -68,19 +70,28 @@ if __name__ == "__main__":
             preprocess_llama2_text2sql_dataset, num_proc=12, remove_columns=["input", "output"]
         )
         dataset = prepare_text2sql_dataset(DATASET, tokenizer, dataset)
-    else:
+    elif DATASET == "b-mc2/sql-create-context":
         dataset = prepare_text2sql_dataset(DATASET, tokenizer)
+    elif DATASET == "cnn_dailymail":
+        dataset = prepare_cnn_dataset(DATASET, "3.0.0", tokenizer)
+    else:
+        dataset = prepare_qa_dataset(DATASET, tokenizer)
 
     model = PeftModel.from_pretrained(model, LORA_PATH)
 
     print_trainable_parameters(model)
 
     rouge = load("rouge")
+    print(f"Evaluating {DATASET}")
 
-    config = GenerationConfig(max_new_tokens=200, temperature=1, top_k=30, repetition_penalty=1.2)
+    config = GenerationConfig(max_new_tokens=512, temperature=1, repetition_penalty=1)
 
-    generated, human = evaluate_test(model, tokenizer, config, dataset["test"], batch_size=64)
+    generated, human = evaluate_test(model, tokenizer, config, dataset["test"], batch_size=32)
     lora_result = rouge.compute(predictions=generated, references=human, use_stemmer=True)
+    print(f"Fine-tuned model: {lora_result}")
+
+    del model
+    torch.cuda.empty_cache()
 
     model = T5ForConditionalGeneration.from_pretrained(
         MODEL_NAME, torch_dtype=torch.bfloat16, device_map="cuda:0"
@@ -94,4 +105,3 @@ if __name__ == "__main__":
     )
 
     print(f"Baseline model: {baseline_result}")
-    print(f"Fine-tuned model: {lora_result}")
