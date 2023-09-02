@@ -29,3 +29,8 @@ def create_app():
         resource_class_kwargs={"model": summary_model, "parser": summary_parser},
     )
     return app
+
+
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True)

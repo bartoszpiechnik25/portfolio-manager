@@ -18,7 +18,7 @@ class SummaryController(LLMController):
         result["code"] = 200
         return result
 
-    def create_prompt(self, text: str) -> str:
+    def create_prompt(text: str) -> str:
         """
         Create the prompt for the model.
 

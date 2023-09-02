@@ -11,6 +11,14 @@ managed by a secretary born in state 'Alabama'?
 Answer:
 """
 
+article = """
+Do not use this command to run your application in production.
+Only use the development server during development.
+The development server is provided for convenience,
+but is not designed to be particularly secure, stable, or efficient.
+See Deploying to Production for how to run in production.
+"""
+
 
 class TestLLMController(unittest.TestCase):
     def setUp(self):
@@ -32,11 +40,11 @@ class TestLLMController(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("message", response.json)
 
-    # def test_summary_post(self):
-    #     response = self.app.post(CONFIG.SUMMARY_ENDPOINT, json={"text": "Hello World!"})
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn("generated_sequence", response.json)
-    #     self.assertIsInstance(response.json["generated_sequence"], list)
+    def test_summary_post(self):
+        response = self.app.post(CONFIG.SUMMARY_ENDPOINT, json={"text": article})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("generated_sequence", response.json)
+        self.assertIsInstance(response.json["generated_sequence"], list)
 
 
 if __name__ == "__main__":

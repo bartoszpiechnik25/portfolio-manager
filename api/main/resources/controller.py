@@ -14,5 +14,5 @@ class LLMController(Resource, ABC):
 
     @staticmethod
     @abstractmethod
-    def create_prompt(self) -> str:
+    def create_prompt() -> str:
         pass
