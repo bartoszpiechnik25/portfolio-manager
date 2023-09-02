@@ -14,7 +14,7 @@ from transformers import (
 )
 
 MODEL_NAME = "google/flan-t5-large"
-DATASET = "ChrisHayduk/Llama-2-SQL-Dataset"
+DATASET = "cnn_dailymail"
 LORA_PATH = f"./models/lora_{MODEL_NAME.split('/')[-1]}_{DATASET.split('/')[-1]}"
 TRAIN_DIR = "./models/checkpoints_local"
 HEADS = [
@@ -34,6 +34,7 @@ HEADS = [
     "The following SQL code demonstrates table creation:",
 ]
 PERCENTILE = 99.9
+ANS_PERCENTILE = 97
 
 
 def print_trainable_parameters(model: torch.nn.Module) -> None:
@@ -63,7 +64,7 @@ def print_trainable_parameters(model: torch.nn.Module) -> None:
 def generate_prompt(
     dataset_record: Dict[str, str],
     tokenizer: Callable,
-    prompt_cloumn: str = "prompt",
+    prompt_column: str = "prompt",
     ans_column: str = "output",
     max_prompt_len: int = 512,
     max_ans_len: int = 512,
@@ -76,7 +77,7 @@ def generate_prompt(
     """
 
     dataset_record["input_ids"] = tokenizer(
-        dataset_record[prompt_cloumn],
+        dataset_record[prompt_column],
         return_tensors="pt",
         truncation=True,
         padding="max_length",
@@ -92,7 +93,9 @@ def generate_prompt(
     ).input_ids.squeeze(0)
 
     # Set label padding token to -100 so that it is ignored in the loss function
-    dataset_record["labels"] = label_input_ids.masked_fill(label_input_ids == 0, -100)
+    dataset_record["labels"] = label_input_ids.masked_fill(
+        label_input_ids == tokenizer.pad_token_id, -100
+    )
 
     return dataset_record
 
@@ -126,7 +129,7 @@ def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     dataset = dataset.map(lambda x: process(x), num_proc=12)
     max_prompt_len = int(np.percentile(dataset["len"], PERCENTILE))
     print(f"Max prompt length: {max_prompt_len}")
-    max_ans_len = int(np.percentile(dataset["ans_len"], 95))
+    max_ans_len = int(np.percentile(dataset["ans_len"], ANS_PERCENTILE))
     print(f"Max answer length: {max_ans_len}")
 
     dataset = dataset.filter(
@@ -144,6 +147,8 @@ def prepare_qa_dataset(name: str, tokenizer: Callable) -> DatasetDict:
     dataset = dataset.remove_columns(
         ["input", "output", "instruction", "text", "len", "ans_len", "prompt"]
     )
+    dataset.set_format(type="torch", columns=["input_ids", "labels"])
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
 
     return dataset
 
@@ -224,9 +229,50 @@ def preprocess_llama2_text2sql_dataset(record: Dict[str, str]) -> Dict[str, str]
     }
 
 
+def prepare_cnn_dataset(name: str, version: str, tokenizer: Callable) -> DatasetDict:
+    def preprocess_cnn_dataset(record: Dict[str, str]) -> Dict[str, str]:
+        record["article"] = f"Summarize the following article:\n{record['article']}\nSummary:"
+        record["article_len"] = tokenizer(record["article"], return_length=True, verbose=False)[
+            "length"
+        ][0]
+        record["highlights_len"] = tokenizer(
+            record["highlights"], return_length=True, verbose=False
+        )["length"][0]
+        return record
+
+    dataset = load_dataset(name, version)
+    dataset = concatenate_datasets([dataset["train"], dataset["validation"], dataset["test"]])
+    dataset = dataset.map(preprocess_cnn_dataset, num_proc=12)
+
+    dataset = dataset.filter(
+        lambda x: x["article_len"] <= 512 and x["highlights_len"] <= 512,
+        num_proc=12,
+    )
+
+    max_prompt_len = max(dataset["article_len"])
+    max_ans_len = max(dataset["highlights_len"])
+    print(f"Max prompt length: {max_prompt_len}")
+    print(f"Max answer length: {max_ans_len}")
+
+    dataset = dataset.map(
+        generate_prompt,
+        fn_kwargs={
+            "tokenizer": tokenizer,
+            "prompt_column": "article",
+            "ans_column": "highlights",
+            "max_prompt_len": max_prompt_len,
+            "max_ans_len": max_ans_len,
+        },
+        num_proc=12,
+        remove_columns=["article_len", "highlights_len", "id"],
+    )
+    dataset.set_format(type="torch", columns=["input_ids", "labels"])
+    dataset = dataset.train_test_split(test_size=0.1, shuffle=True, seed=2137)
+    return dataset
+
+
 if __name__ == "__main__":
     import os
-    import pickle
     import time
 
     print("Loading model and tokenizer...")
@@ -248,7 +294,7 @@ if __name__ == "__main__":
         lora_config = LoraConfig(
             r=16,
             task_type="SEQ_2_SEQ_LM",
-            lora_dropout=0.1,
+            lora_dropout=0.05,
             lora_alpha=32,
             target_modules=["q", "v", "o"],
             bias="all",
@@ -266,6 +312,8 @@ if __name__ == "__main__":
             preprocess_llama2_text2sql_dataset, num_proc=12, remove_columns=["input", "output"]
         )
         dataset = prepare_text2sql_dataset(DATASET, tokenizer, dataset)
+    elif DATASET == "cnn_dailymail":
+        dataset = prepare_cnn_dataset(DATASET, "3.0.0", tokenizer)
     else:
         dataset = prepare_qa_dataset(DATASET, tokenizer)
 
@@ -276,9 +324,9 @@ if __name__ == "__main__":
     out_dir = TRAIN_DIR + f"/lora-{MODEL_NAME.split('/')[-1]}-{t}"
 
     training_args = Seq2SeqTrainingArguments(
-        learning_rate=3e-4,
+        learning_rate=3e-3,
         lr_scheduler_type="cosine",
-        num_train_epochs=2,
+        num_train_epochs=1,
         auto_find_batch_size=True,
         gradient_accumulation_steps=8,
         output_dir=out_dir,
@@ -309,13 +357,6 @@ if __name__ == "__main__":
 
     print("Training...")
     trainer.train()
-
-    logs_dir = out_dir + "/logs"
-    if not os.path.isdir(logs_dir):
-        os.makedirs(logs_dir, exist_ok=True)
-
-    with open(logs_dir + "/log_metrics.pkl", "wb") as f:
-        pickle.dump(trainer.state.log_history, f)
 
     print("Saving model...")
     trainer.save_model(LORA_PATH)
