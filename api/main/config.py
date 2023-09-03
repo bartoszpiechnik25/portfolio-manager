@@ -22,9 +22,9 @@ class Config:
     SQL_MODEL_PATH: str
     QA_MODEL_PATH: str
     SUMMARY_MODEL_PATH: str
-    QA_ENDPOINT: str = "/qa"
-    TEX2SQL_ENDPOINT: str = "/text2sql"
-    SUMMARY_ENDPOINT: str = "/summary"
+    QA_ENDPOINT: str = "/api/qa"
+    TEX2SQL_ENDPOINT: str = "/api/text2sql"
+    SUMMARY_ENDPOINT: str = "/api/summary"
 
 
 class LLMType(enum.Enum):

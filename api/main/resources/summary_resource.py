@@ -15,7 +15,7 @@ class SummaryController(LLMController):
             result = self.model.generate_response(prompt, generation_config)
         except Exception as e:
             abort(400, str(e))
-        result["code"] = 200
+        result["status_code"] = 200
         return result
 
     def create_prompt(text: str) -> str:

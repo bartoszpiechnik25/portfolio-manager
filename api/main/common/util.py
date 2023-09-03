@@ -1,7 +1,7 @@
 from flask_restful import reqparse, fields
 
 response_blueprint = {
-    "code": fields.Integer,
+    "status_code": fields.Integer,
     "generated_sequence": fields.List(fields.String),
     "tokenizer_warning": fields.String,
 }
