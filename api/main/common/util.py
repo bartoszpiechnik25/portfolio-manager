@@ -8,7 +8,7 @@ response_blueprint = {
 
 
 def create_sql_parser() -> reqparse.RequestParser:
-    sql_parser = reqparse.RequestParser()
+    sql_parser = reqparse.RequestParser(bundle_errors=True)
     sql_parser.add_argument("sql_table", type=str, required=True, help="Code generating SQL table.")
     sql_parser.add_argument(
         "question", type=str, required=True, help="Question regarding the SQL table."
@@ -48,7 +48,7 @@ def create_sql_parser() -> reqparse.RequestParser:
 
 
 def create_summary_request_parser():
-    summary_request_parser = reqparse.RequestParser()
+    summary_request_parser = reqparse.RequestParser(bundle_errors=True)
     summary_request_parser.add_argument("text", type=str, required=True, help="Text to summarize.")
     summary_request_parser.add_argument(
         "num_return_sequences",
