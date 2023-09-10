@@ -14,17 +14,19 @@ class Config:
         SQL_MODEL_PATH (str): Path to the SQL model.
         QA_MODEL_PATH (str): Path to the QA model.
         SUMMARY_MODEL_PATH (str): Path to the summary model.
-        QA_ENDPOINT (str, optional): Endpoint for QA. Defaults to "/qa".
-        TEX2SQL_ENDPOINT (str, optional): Endpoint for text2sql. Defaults to "/text2sql".
-        SUMMARY_ENDPOINT (str, optional): Endpoint for summary. Defaults to "/summary".
+        QA_ENDPOINT (str, optional): Endpoint for QA. Defaults to "/api/v1/qa".
+        TEX2SQL_ENDPOINT (str, optional): Endpoint for text2sql. Defaults to "/api/v1/text2sql".
+        SUMMARY_ENDPOINT (str, optional): Endpoint for summary. Defaults to "/api/v1/summary".
     """
 
     SQL_MODEL_PATH: str
     QA_MODEL_PATH: str
     SUMMARY_MODEL_PATH: str
-    QA_ENDPOINT: str = "/qa"
-    TEX2SQL_ENDPOINT: str = "/text2sql"
-    SUMMARY_ENDPOINT: str = "/summary"
+    DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
+    TEST_DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager_test"
+    QA_ENDPOINT: str = "/api/v1/qa"
+    TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
+    SUMMARY_ENDPOINT: str = "/api/v1/summary"
 
 
 class LLMType(enum.Enum):
