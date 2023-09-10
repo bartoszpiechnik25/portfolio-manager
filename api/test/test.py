@@ -1,5 +1,5 @@
 import unittest
-from api.main.app import create_app, CONFIG
+from api.main.flask_app import create_app, CONFIG
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
 CREATE TABLE management (department_id VARCHAR, head_id VARCHAR);
@@ -21,8 +21,10 @@ See Deploying to Production for how to run in production.
 
 
 class TestLLMController(unittest.TestCase):
-    def setUp(self):
-        self.app = create_app().test_client()
+    @classmethod
+    def setUpClass(cls):
+        cls.app, cls.api = create_app(test=True, db_only=False)
+        cls.app = cls.app.test_client()
 
     def test_sql_post(self):
         response = self.app.post(
@@ -35,7 +37,11 @@ class TestLLMController(unittest.TestCase):
     def test_shouldReturnErrorWhenIncorrectData(self):
         response = self.app.post(
             CONFIG.TEX2SQL_ENDPOINT,
-            json={"sql_table": table, "question": question, "num_return_sequences": 3},
+            json={
+                "sql_table": table,
+                "question": question,
+                "num_return_sequences": 3,
+            },
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("message", response.json)
