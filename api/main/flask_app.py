@@ -49,7 +49,7 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     return app, api
 
 
-app, api = create_app()
+app, api = create_app(test=True)
 
 
 # if __name__ == "__main__":
