@@ -82,3 +82,13 @@ def create_summary_request_parser():
         help="Maximum number of tokens to generate.",
     )
     return summary_request_parser
+
+
+def create_user_parser():
+    user_parser = reqparse.RequestParser()
+    user_parser.add_argument("username", type=str, required=True, help="Username.")
+    user_parser.add_argument("email", type=str, required=True, help="Email.")
+    user_parser.add_argument("password", type=str, required=True, help="Password.")
+    user_parser.add_argument("name", type=str, required=False, help="Name.")
+    user_parser.add_argument("surname", type=str, required=False, help="Surname.")
+    return user_parser
