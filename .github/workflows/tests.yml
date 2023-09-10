@@ -6,6 +6,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: siema
+          POSTGRES_DB: portfolio_manager_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -16,7 +31,9 @@ jobs:
         python-version: "3.10"
 
     - name: Install dependencies
-      run: pip install flask flask_restful transformers peft torch
+      run: pip install flask flask_restful transformers peft torch flask_sqlalchemy psycopg2-binary
 
     - name: Run tests
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/portfolio_manager_test
       run: python -m unittest discover

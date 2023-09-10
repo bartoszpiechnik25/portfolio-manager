@@ -10,9 +10,6 @@ from api.main.common.util import (
     create_user_parser,
 )
 from flask_sqlalchemy import SQLAlchemy
-import dotenv
-
-env_config = dotenv.dotenv_values(".env")
 
 db = SQLAlchemy()
 
@@ -20,9 +17,9 @@ db = SQLAlchemy()
 def create_app(test: bool = False, db_only: bool = False, **kwargs):
     app = Flask(__name__)
     if test:
-        app.config["SQLALCHEMY_DATABASE_URI"] = env_config["TEST_DATABASE_URI"]
+        app.config["SQLALCHEMY_DATABASE_URI"] = CONFIG.TEST_DATABASE_URI
     else:
-        app.config["SQLALCHEMY_DATABASE_URI"] = env_config["DATABASE_URI"]
+        app.config["SQLALCHEMY_DATABASE_URI"] = CONFIG.DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     api = Api(app)
