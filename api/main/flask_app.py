@@ -12,6 +12,7 @@ from api.main.common.util import (
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+from api.main.resources.users_resource import UserResource, UsersResource
 
 
 def create_app(test: bool = False, db_only: bool = False, **kwargs):
@@ -49,18 +50,19 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     return app, api
 
 
-app, api = create_app(test=True)
-
-
-# if __name__ == "__main__":
-from api.main.resources.users_resource import UserController
+app, api = create_app()
 
 db.init_app(app)
 
 user_parser = create_user_parser()
 api.add_resource(
-    UserController, "/users/<user_id>", "/users", resource_class_kwargs={"parser": user_parser}
+    UserResource,
+    f"{CONFIG.USER_ENDPOINT}/<username>",
+    CONFIG.USER_ENDPOINT,
+    resource_class_kwargs={"parser": user_parser},
 )
+
+api.add_resource(UsersResource, CONFIG.USERS_ENDPOINT)
 
 with app.app_context():
     db.create_all()

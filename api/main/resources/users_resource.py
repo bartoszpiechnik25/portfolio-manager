@@ -4,19 +4,15 @@ from api.main.database import Users
 from flask_restful import reqparse
 
 
-class UserController(Resource):
+class UserResource(Resource):
     def __init__(self, **kwargs) -> None:
         self.parser: reqparse.RequestParser = kwargs["parser"]
 
-    def get(self, user_id: str):
-        db_user = db.session.query(Users).filter_by(user_id=user_id).first()
+    def get(self, username: str):
+        db_user = db.session.query(Users).filter_by(username=username).first()
         if db_user is None:
             return {"message": "User not found"}, 404
         return db_user.serialize(), 200
-
-    # def get(self):
-    #     users = db.session.query(Users).all()
-    #     return [user.serialize() for user in users], 200
 
     def post(self):
         data = self.parser.parse_args()
@@ -31,3 +27,9 @@ class UserController(Resource):
         db.session.add(user)
         db.session.commit()
         return user.serialize(), 201
+
+
+class UsersResource(Resource):
+    def get(self):
+        users = db.session.query(Users).all()
+        return [user.serialize() for user in users], 200
