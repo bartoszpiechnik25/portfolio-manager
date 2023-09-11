@@ -1,6 +1,14 @@
 import uuid
 from api.main.flask_app import db
-from typing import List
+from typing import List, Dict
+
+FIELDS = [
+    "username",
+    "password",
+    "email",
+    "name",
+    "surname",
+]
 
 
 class Users(db.Model):
@@ -28,9 +36,10 @@ class Users(db.Model):
         }
 
     @staticmethod
-    def email_exists(email: str, users: List["Users"]) -> bool:
-        return any(user.email == email for user in users)
+    def required_fields_in_request_body(args: dict) -> bool:
+        fields = ["username", "email", "password"]
+        return all(field in args for field in fields)
 
     @staticmethod
-    def username_exists(username: str, users: List["Users"]) -> bool:
-        return any(user.username == username for user in users)
+    def valid_field_in_request_body(args: Dict[str, str], fields: List[str] = FIELDS) -> bool:
+        return all(arg in fields for arg in args)

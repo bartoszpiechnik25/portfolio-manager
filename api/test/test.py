@@ -90,7 +90,7 @@ class TestUserController(unittest.TestCase):
         response = self.app.get(CONFIG.USERS_ENDPOINT)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json, list)
-        self.assertEqual(len(response.json), 2)
+        self.assertEqual(len(response.json), 3)
 
     def test_get_user1(self):
         response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
@@ -101,6 +101,41 @@ class TestUserController(unittest.TestCase):
         response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user2['username']}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["username"], self.user2["username"])
+
+    def test_get_non_existing_user(self):
+        response = self.app.get(f"{CONFIG.USER_ENDPOINT}/non_existing_user")
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_non_existing_user(self):
+        response = self.app.delete(f"{CONFIG.USER_ENDPOINT}/non_existing_user")
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_user1(self):
+        response = self.app.delete(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
+        self.assertEqual(response.status_code, 204)
+        self.app.post(
+            CONFIG.USER_ENDPOINT,
+            json=self.user1,
+        )
+
+    def test_modify_user2(self):
+        response = self.app.put(
+            f"{CONFIG.USER_ENDPOINT}/{self.user2['username']}", json={"name": "test3"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["name"], "test3")
+
+    def test_modify_non_existing_user(self):
+        response = self.app.put(f"{CONFIG.USER_ENDPOINT}/non_existing_user", json={"name": "test3"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_user_with_put(self):
+        response = self.app.put(
+            f"{CONFIG.USER_ENDPOINT}/test4",
+            json={"email": "sadlfsadf@sldf.com", "password": "test4", "username": "test4"},
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json["username"], "test4")
 
 
 if __name__ == "__main__":

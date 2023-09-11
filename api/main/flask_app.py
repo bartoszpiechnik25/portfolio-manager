@@ -50,7 +50,7 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     return app, api
 
 
-app, api = create_app()
+app, api = create_app(db_only=True)
 
 db.init_app(app)
 
