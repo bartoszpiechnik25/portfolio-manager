@@ -19,7 +19,7 @@ but is not designed to be particularly secure, stable, or efficient.
 See Deploying to Production for how to run in production.
 """
 app, api = create_app(test=True)
-db_init(app)
+db_init(app, api)
 
 
 class TestLLMController(unittest.TestCase):
@@ -96,7 +96,7 @@ class TestUserController(unittest.TestCase):
     def test_get_user1(self):
         response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["password"], self.user1["password"])
+        self.assertEqual(response.json["email"], self.user1["email"])
 
     def test_get_user2(self):
         response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user2['username']}")

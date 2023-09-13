@@ -58,7 +58,7 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     return app, api
 
 
-def db_init(app: Flask = None):
+def db_init(app: Flask = None, api: Api = None):
     from api.main.database import Currency, Users, ETF, Stock
 
     db.init_app(app)
@@ -79,4 +79,4 @@ def db_init(app: Flask = None):
 
 
 app, api = create_app(db_only=True)
-db_init(app)
+db_init(app, api)
