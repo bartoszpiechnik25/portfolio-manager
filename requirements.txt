@@ -1,0 +1,9 @@
+flask-marshmallow
+psycopg2-binary
+transformers
+flask-sqlalchemy
+marshmallow-sqlalchemy
+flask
+flask_restful
+torch
+peft
