@@ -47,7 +47,7 @@ def create_sql_parser() -> reqparse.RequestParser:
     return sql_parser
 
 
-def create_summary_request_parser():
+def create_summary_request_parser() -> reqparse.RequestParser:
     summary_request_parser = reqparse.RequestParser()
     summary_request_parser.add_argument("text", type=str, required=True, help="Text to summarize.")
     summary_request_parser.add_argument(
@@ -84,7 +84,7 @@ def create_summary_request_parser():
     return summary_request_parser
 
 
-def create_user_parser():
+def create_user_parser() -> reqparse.RequestParser:
     user_parser = reqparse.RequestParser()
     user_parser.add_argument("username", type=str, required=True, help="Username.")
     user_parser.add_argument("email", type=str, required=True, help="Email.")
@@ -94,7 +94,7 @@ def create_user_parser():
     return user_parser
 
 
-def create_etf_parser():
+def create_etf_parser() -> reqparse.RequestParser:
     etf_parser = reqparse.RequestParser()
     etf_parser.add_argument("etf_ticker", type=str, required=True, help="ETF ticker.")
     etf_parser.add_argument("name", type=str, required=True, help="ETF name.")
@@ -233,5 +233,42 @@ def create_etfs():
                 {"name": "AstraZeneca plc", "ticker": "AZN", "weight": 2.5},
                 {"name": "Diageo plc", "ticker": "DGE", "weight": 2.0},
             ],
+        },
+    ]
+
+
+def create_stocks_data():
+    return [
+        {
+            "stock_ticker": "AMZN",
+            "currency_code": "USD",
+            "name": "Amazon.com, Inc.",
+            "google_ticker": "NASDAQ:AMZN",
+            "isin": "US0231351067",
+            "dividend_yield": 0.00,
+        },
+        {
+            "stock_ticker": "GOOGL",
+            "currency_code": "USD",
+            "name": "Alphabet Inc.",
+            "google_ticker": "NASDAQ:GOOGL",
+            "isin": "US02079K3059",
+            "dividend_yield": 0.00,
+        },
+        {
+            "stock_ticker": "TSLA",
+            "currency_code": "USD",
+            "name": "Tesla, Inc.",
+            "google_ticker": "NASDAQ:TSLA",
+            "isin": "US88160R1014",
+            "dividend_yield": 0.00,
+        },
+        {
+            "stock_ticker": "AAPL",
+            "currency_code": "USD",
+            "name": "Apple Inc.",
+            "google_ticker": "NASDAQ:AAPL",
+            "isin": "US0378331005",
+            "dividend_yield": 0.60,
         },
     ]

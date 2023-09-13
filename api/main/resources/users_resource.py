@@ -1,36 +1,37 @@
 from flask_restful import Resource
 from api.main.flask_app import db
-from api.main.database import Users
-from flask_restful import reqparse
+from api.main.database import Users, UsersSchema
 from flask import request, abort
 from sqlalchemy import select, update, delete
+from api.main.common.util import create_user_parser
 
 
 class UserResource(Resource):
-    def __init__(self, **kwargs) -> None:
-        self.parser: reqparse.RequestParser = kwargs["parser"]
+    def __init__(self) -> None:
+        self.parser = create_user_parser()
+        self.user_schema = UsersSchema()
 
     def get(self, username: str):
         db_user = db.session.execute(select(Users).where(Users.username == username)).first()
         if db_user is None:
-            return {"message": "User not found"}, 404
-        return db_user[0].serialize(), 200
+            abort(404, "User not found")
+        return self.user_schema.dump(db_user[0]), 200
 
     def post(self):
         data = self.parser.parse_args()
 
         users = db.session.execute(select(Users).where(Users.username == data["username"])).first()
         if users is not None:
-            return {"message": f"User with username: {data['username']} already exists!"}, 400
+            abort(400, f"User with username: {data['username']} already exists!")
 
         emails = db.session.execute(select(Users).where(Users.email == data["email"])).first()
         if emails is not None:
-            return {"message": f"User with email: {data['email']} already exists!"}, 400
+            abort(400, f"User with email: {data['email']} already exists!")
 
         user = Users(**data)
         db.session.add(user)
         db.session.commit()
-        return user.serialize(), 201
+        return self.user_schema.dump(user), 201
 
     def delete(self, username: str):
         result = db.session.execute(select(Users).where(Users.username == username)).first()
@@ -54,16 +55,19 @@ class UserResource(Resource):
             user = Users(**args)
             db.session.add(user)
             db.session.commit()
-            return user.serialize(), 201
+            return self.user_schema.dump(user), 201
         else:
             if not Users.valid_field_in_request_body(request.json):
                 abort(400, "Invalid fields in request body!")
             db.session.execute(update(Users).where(Users.username == username).values(request.json))
             db.session.commit()
-            return result[0].serialize(), 200
+            return self.user_schema.dump(result[0]), 200
 
 
 class UsersResource(Resource):
+    def __init__(self) -> None:
+        self.user_schema = UsersSchema()
+
     def get(self):
         users = db.session.execute(select(Users)).all()
-        return [user[0].serialize() for user in users], 200
+        return [self.user_schema.dump(user[0]) for user in users], 200

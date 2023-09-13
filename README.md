@@ -4,13 +4,14 @@ Purpose of this project is to create a portfolio manager that can be used to tra
 
 ## TODO
 
-- :card_file_box: Create a database to store user data and portfolio data.
-- :mortar_board: Fine-tune FLAN-T5 to summarize articles and answer financial questions.
-- :whale: Dockerize LLM and create REST API.
 - :paperclip: Integrate with Google Finance / Yahoo Stock to get stock data and news.
 - :framed_picture: Create web interface to display portfolio performance and news.
 - :electric_plug: Connect database to web interface.
 
 ## Progress
 
-- :white_check_mark: :white_check_mark: :white_check_mark: Fine-tune FLAN-T5 to answer financial questions and generate SQL queries. (see [fine-tuning](./flan_t5/FINE_TUNING.md)).
+- :white_check_mark: :white_check_mark: :white_check_mark: Fine-tune FLAN-T5 to answer financial questions and generate SQL queries and summarize articles. (see [fine-tuning](./flan_t5/FINE_TUNING.md)).
+
+- ⬜ Dockerize 🐳 LLM and create REST API to serve the model. Progress [=======>.......] 50% - REST API done.
+
+- ⬜ Create a database to store user and portfolio data. Create REST API. Progress: [=======>.....] 60%
