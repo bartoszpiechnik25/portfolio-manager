@@ -24,6 +24,9 @@ class Config:
     SUMMARY_MODEL_PATH: str
     DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
     TEST_DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager_test"
+    USERS_ENDPOINT: str = "/api/v1/users"
+    USER_ENDPOINT: str = "/api/v1/user"
+    ETF_ENDPOINT: str = "/api/v1/etf"
     QA_ENDPOINT: str = "/api/v1/qa"
     TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
     SUMMARY_ENDPOINT: str = "/api/v1/summary"

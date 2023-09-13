@@ -8,10 +8,18 @@ from api.main.common.util import (
     create_sql_parser,
     create_summary_request_parser,
     create_user_parser,
+    create_currencies,
+    create_users,
+    create_etfs,
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
+from sqlalchemy import insert
 
 db = SQLAlchemy()
+ma = Marshmallow()
+from api.main.resources.users_resource import UserResource, UsersResource
+from api.main.resources.etf_resource import ETFResource
 
 
 def create_app(test: bool = False, db_only: bool = False, **kwargs):
@@ -49,18 +57,30 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     return app, api
 
 
-app, api = create_app(test=True)
-
-
-# if __name__ == "__main__":
-from api.main.resources.users_resource import UserController
+app, api = create_app(test=True, db_only=True)
 
 db.init_app(app)
+ma.init_app(app)
 
 user_parser = create_user_parser()
 api.add_resource(
-    UserController, "/users/<user_id>", "/users", resource_class_kwargs={"parser": user_parser}
+    UserResource,
+    f"{CONFIG.USER_ENDPOINT}/<username>",
+    CONFIG.USER_ENDPOINT,
+    resource_class_kwargs={"parser": user_parser},
 )
 
+api.add_resource(UsersResource, CONFIG.USERS_ENDPOINT)
+api.add_resource(ETFResource, f"{CONFIG.ETF_ENDPOINT}/<ticker>", CONFIG.ETF_ENDPOINT)
+from api.main.database import Currency, Users, ETF
+
+
 with app.app_context():
+    # db.drop_all()
+    db.metadata.drop_all(db.engine)
     db.create_all()
+    db.session.execute(insert(Currency).values(create_currencies()))
+    db.session.commit()
+    db.session.execute(insert(Users).values(create_users()))
+    db.session.execute(insert(ETF).values(create_etfs()))
+    db.session.commit()
