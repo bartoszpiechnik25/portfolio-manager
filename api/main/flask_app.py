@@ -73,12 +73,8 @@ def db_init(app: Flask = None, api: Api = None):
         db.session.execute(insert(ETF).values(create_etfs()))
         db.session.execute(insert(Stock).values(create_stocks_data()))
         db.session.commit()
+    print(f"Connected to {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     api.add_resource(UserResource, f"{CONFIG.USER_ENDPOINT}/<username>", CONFIG.USER_ENDPOINT)
     api.add_resource(UsersResource, CONFIG.USERS_ENDPOINT)
     api.add_resource(ETFResource, f"{CONFIG.ETF_ENDPOINT}/<ticker>", CONFIG.ETF_ENDPOINT)
-
-
-app, api = create_app(db_only=True)
-if app.config["TESTING"] is False:
-    db_init(app, api)
