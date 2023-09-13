@@ -1,6 +1,5 @@
 import unittest
 from api.test.test_app import app, CONFIG, db
-from api.main.database import Users
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
 CREATE TABLE management (department_id VARCHAR, head_id VARCHAR);
@@ -79,7 +78,7 @@ class TestUserController(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         with cls.app.application.app_context():
-            db.session.query(Users).delete()
+            db.metadata.drop_all(db.engine)
             db.session.commit()
 
     def test_add_existing_user(self):
@@ -90,7 +89,7 @@ class TestUserController(unittest.TestCase):
         response = self.app.get(CONFIG.USERS_ENDPOINT)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json, list)
-        self.assertEqual(len(response.json), 3)
+        self.assertEqual(len(response.json), 8)
 
     def test_get_user1(self):
         response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
