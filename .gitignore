@@ -161,3 +161,5 @@ cython_debug/
 
 models/
 *.ipynb
+api/main/database.py
+.flaskenv

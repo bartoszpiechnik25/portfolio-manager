@@ -14,7 +14,7 @@ FIELDS = [
 class Users(db.Model):
     __tablename__ = "users"
     user_id = db.Column(db.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True)
-    username = db.Column(db.db.String(40), unique=True, nullable=False)
+    username = db.Column(db.String(40), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     name = db.Column(db.String(255), nullable=True, default=None)
