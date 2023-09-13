@@ -92,3 +92,146 @@ def create_user_parser():
     user_parser.add_argument("name", type=str, required=False, help="Name.")
     user_parser.add_argument("surname", type=str, required=False, help="Surname.")
     return user_parser
+
+
+def create_etf_parser():
+    etf_parser = reqparse.RequestParser()
+    etf_parser.add_argument("etf_ticker", type=str, required=True, help="ETF ticker.")
+    etf_parser.add_argument("name", type=str, required=True, help="ETF name.")
+    etf_parser.add_argument("currency_code", type=str, required=True, help="ETF currency code.")
+    etf_parser.add_argument("google_ticker", type=str, required=True, help="ETF google ticker.")
+    etf_parser.add_argument("isin", type=str, required=True, help="ETF ISIN.")
+    etf_parser.add_argument("ter", type=float, required=True, help="ETF TER.")
+    etf_parser.add_argument(
+        "distribution",
+        type=str,
+        required=True,
+        help="ETF distribution.(Accumulating | Distributing)",
+    )
+    etf_parser.add_argument(
+        "replication_method",
+        type=str,
+        required=True,
+        help="ETF replication method.(Physical | Synthetic | Physical(Sampling))",
+    )
+    etf_parser.add_argument("fund_size", type=float, required=False, help="ETF fund size.")
+    etf_parser.add_argument("holdings", type=int, required=False, help="ETF holdings.")
+    etf_parser.add_argument(
+        "top_holdings", type=list, required=False, help="ETF top holdings.", location="json"
+    )
+
+    return etf_parser
+
+
+def create_users():
+    return [
+        {
+            "username": "johndoe",
+            "password": "password123",
+            "email": "johndoe@example.com",
+            "name": "John",
+            "surname": "Doe",
+        },
+        {
+            "username": "janedoe",
+            "password": "password456",
+            "email": "janedoe@example.com",
+            "name": "Jane",
+            "surname": "Doe",
+        },
+        {
+            "username": "bobsmith",
+            "password": "password789",
+            "email": "bobsmith@example.com",
+            "name": "Bob",
+            "surname": "Smith",
+        },
+        {
+            "username": "sarahjones",
+            "password": "password123",
+            "email": "sarahjones@example.com",
+            "name": "Sarah",
+            "surname": "Jones",
+        },
+        {
+            "username": "mikebrown",
+            "password": "password456",
+            "email": "mikebrown@example.com",
+            "name": "Mike",
+            "surname": "Brown",
+        },
+    ]
+
+
+def create_currencies():
+    return [
+        {"name": "US Dollar", "currency_code": "USD"},
+        {"name": "Euro", "currency_code": "EUR"},
+        {"name": "British Pound", "currency_code": "GBP"},
+        {"name": "Japanese Yen", "currency_code": "JPY"},
+        {"name": "Canadian Dollar", "currency_code": "CAD"},
+        {"name": "Swiss Franc", "currency_code": "CHF"},
+        {"name": "Polish Zloty", "currency_code": "PLN"},
+    ]
+
+
+def create_etfs():
+    return [
+        {
+            "currency_code": "USD",
+            "name": "Vanguard Total Stock Market ETF",
+            "etf_ticker": "VTI",
+            "google_ticker": "NYSEARCA:VTI",
+            "isin": "US9229087690",
+            "ter": 0.03,
+            "distribution": "Accumulating",
+            "replication_method": "Physical",
+            "fund_size": 20000000000,
+            "holdings": 3500,
+            "top_holdings": [
+                {"name": "Apple Inc.", "ticker": "AAPL", "weight": 6.5},
+                {"name": "Microsoft Corporation", "ticker": "MSFT", "weight": 5.0},
+                {"name": "Amazon.com, Inc.", "ticker": "AMZN", "weight": 4.0},
+                {"name": "Facebook, Inc.", "ticker": "FB", "weight": 2.5},
+                {"name": "Alphabet Inc.", "ticker": "GOOGL", "weight": 2.0},
+            ],
+        },
+        {
+            "currency_code": "EUR",
+            "name": "iShares Core MSCI World UCITS ETF",
+            "etf_ticker": "IWDA",
+            "google_ticker": "AMS:IWDA",
+            "isin": "IE00B4L5Y983",
+            "ter": 0.20,
+            "distribution": "Distributing",
+            "replication_method": "Physical",
+            "fund_size": 5000000000,
+            "holdings": 1600,
+            "top_holdings": [
+                {"name": "Apple Inc.", "ticker": "AAPL", "weight": 2.5},
+                {"name": "Microsoft Corporation", "ticker": "MSFT", "weight": 1.8},
+                {"name": "Amazon.com, Inc.", "ticker": "AMZN", "weight": 1.5},
+                {"name": "Facebook, Inc.", "ticker": "FB", "weight": 1.2},
+                {"name": "Alphabet Inc.", "ticker": "GOOGL", "weight": 1.0},
+            ],
+        },
+        {
+            "currency_code": "GBP",
+            "name": "Vanguard FTSE 100 UCITS ETF",
+            "etf_ticker": "VUKE",
+            "google_ticker": "LON:VUKE",
+            "isin": "IE00B810Q511",
+            "ter": 0.09,
+            "distribution": "Distributing",
+            "replication_method": "Physical",
+            "fund_size": 1000000000,
+            "holdings": 100,
+            "top_holdings": [
+                {"name": "HSBC Holdings plc", "ticker": "HSBA", "weight": 6.5},
+                {"name": "BP plc", "ticker": "BP", "weight": 5.0},
+                {"name": "Royal Dutch Shell plc", "ticker": "RDSB", "weight": 4.0},
+                {"name": "AstraZeneca plc", "ticker": "AZN", "weight": 2.5},
+                {"name": "Diageo plc", "ticker": "DGE", "weight": 2.0},
+            ],
+        },
+    ]
