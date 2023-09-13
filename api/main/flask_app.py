@@ -26,6 +26,7 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
     app = Flask(__name__)
     if test:
         app.config["SQLALCHEMY_DATABASE_URI"] = CONFIG.TEST_DATABASE_URI
+        app.config["TESTING"] = True
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = CONFIG.DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -79,4 +80,5 @@ def db_init(app: Flask = None, api: Api = None):
 
 
 app, api = create_app(db_only=True)
-db_init(app, api)
+if app.config["TESTING"] is False:
+    db_init(app, api)
