@@ -15,11 +15,19 @@ from api.main.common.util import (
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from sqlalchemy import insert
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 db = SQLAlchemy()
+db._make_declarative_base(Base)
 ma = Marshmallow()
 from api.main.resources.users_resource import UserResource, UsersResource
-from api.main.resources.etf_resource import ETFResource
+from api.main.resources.etf_resource import ETFResource, ETFsResource, ETFIdentifierRouteResource
+from api.main.resources.investments_resource import UserInvestedETFsResource
 
 
 def create_app(test: bool = False, db_only: bool = False, **kwargs):
@@ -77,4 +85,10 @@ def db_init(app: Flask = None, api: Api = None):
 
     api.add_resource(UserResource, f"{CONFIG.USER_ENDPOINT}/<username>", CONFIG.USER_ENDPOINT)
     api.add_resource(UsersResource, CONFIG.USERS_ENDPOINT)
-    api.add_resource(ETFResource, f"{CONFIG.ETF_ENDPOINT}/<ticker>", CONFIG.ETF_ENDPOINT)
+    api.add_resource(ETFResource, CONFIG.ETF_ENDPOINT)
+    api.add_resource(ETFsResource, CONFIG.ETFs_ENDPOINT)
+    api.add_resource(
+        ETFIdentifierRouteResource,
+        f"{CONFIG.ETF_ENDPOINT}/<string:identifier>",
+    )
+    api.add_resource(UserInvestedETFsResource, CONFIG.INVESTED_ETFs_ENDPOINT)

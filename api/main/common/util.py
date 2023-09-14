@@ -272,3 +272,11 @@ def create_stocks_data():
             "dividend_yield": 0.60,
         },
     ]
+
+
+# def create_investment_data():
+#     return [
+#         {
+
+#         }
+#     ]
