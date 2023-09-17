@@ -28,7 +28,7 @@ class UserResource(Resource):
         if emails is not None:
             abort(400, f"User with email: {data['email']} already exists!")
 
-        user = Users(**data)
+        user: Users = self.user_schema.load(data, transient=True)
         db.session.add(user)
         db.session.commit()
         return self.user_schema.dump(user), 201

@@ -11,15 +11,25 @@ from api.main.common.util import (
     create_users,
     create_etfs,
     create_stocks_data,
+    create_etf_investment_data,
+    create_stock_investments_data,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from sqlalchemy import insert
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    pass
+
 
 db = SQLAlchemy()
+db._make_declarative_base(Base)
 ma = Marshmallow()
 from api.main.resources.users_resource import UserResource, UsersResource
-from api.main.resources.etf_resource import ETFResource
+from api.main.resources.asset_resource import Asset, Assets
+from api.main.resources.investments_resource import UserInvestedAssets, Invest
 
 
 def create_app(test: bool = False, db_only: bool = False, **kwargs):
@@ -60,7 +70,7 @@ def create_app(test: bool = False, db_only: bool = False, **kwargs):
 
 
 def db_init(app: Flask = None, api: Api = None):
-    from api.main.database import Currency, Users, ETF, Stock
+    from api.main.database import Currency, Users, ETF, Stock, InvestedETFs, InvestedStocks
 
     db.init_app(app)
     ma.init_app(app)
@@ -72,9 +82,20 @@ def db_init(app: Flask = None, api: Api = None):
         db.session.execute(insert(Users).values(create_users()))
         db.session.execute(insert(ETF).values(create_etfs()))
         db.session.execute(insert(Stock).values(create_stocks_data()))
+        db.session.execute(insert(InvestedETFs), create_etf_investment_data())
+        db.session.execute(insert(InvestedStocks), create_stock_investments_data())
         db.session.commit()
     print(f"Connected to {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     api.add_resource(UserResource, f"{CONFIG.USER_ENDPOINT}/<username>", CONFIG.USER_ENDPOINT)
     api.add_resource(UsersResource, CONFIG.USERS_ENDPOINT)
-    api.add_resource(ETFResource, f"{CONFIG.ETF_ENDPOINT}/<ticker>", CONFIG.ETF_ENDPOINT)
+    api.add_resource(Asset, f"{CONFIG.ASSET_ENDPOINT}/<string:investment_type>")
+    api.add_resource(Assets, f"{CONFIG.ASSETS_ENDPOINT}/<string:investment_type>")
+    api.add_resource(
+        UserInvestedAssets,
+        f"{CONFIG.INVESTMENTS_ENDPOINT}/<username>",
+    )
+    api.add_resource(
+        Invest,
+        f"{CONFIG.INVEST_ENDPOINT}/<string:username>/<string:investment_type>",
+    )

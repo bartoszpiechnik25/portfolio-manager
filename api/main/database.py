@@ -21,8 +21,8 @@ class Users(db.Model):
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
-        return "User(id={}, username={}, password={}, email={}, name={}, surname={})".format(
-            self.user_id, self.username, self.password, self.email, self.name, self.surname
+        return "User(username={}, password={}, email={}, name={}, surname={})".format(
+            self.username, self.password, self.email, self.name, self.surname
         )
 
     @staticmethod
@@ -47,6 +47,7 @@ class Investments(db.Model):
     __tablename__ = "investments"
     investment_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(40), db.ForeignKey("users.username"))
+    type = db.Column(db.String(40), nullable=False)
     volume = db.Column(db.Numeric(9, 2), nullable=False)
     open_price = db.Column(db.Numeric(9, 2), nullable=False)
     open_datetime = db.Column(
@@ -55,14 +56,15 @@ class Investments(db.Model):
     close_datetime = db.Column(db.TIMESTAMP(timezone=False), nullable=True)
     close_price = db.Column(db.Numeric(9, 2), nullable=True)
     last_known_price = db.Column(db.Numeric(9, 2), nullable=True)
-
     user_fk = db.relationship("Users", back_populates="investment")
 
     @hybrid_property
     def profit(self):
-        if self.last_known_market_value is None:
-            return None
-        return self.last_known_market_value - self.open_price
+        if self.close_price:
+            return (self.close_price - self.open_price) * self.volume
+        elif self.last_known_price and self.close_price is None:
+            return (self.last_known_price - self.open_price) * self.volume
+        return None
 
     @hybrid_property
     def duration(self):
@@ -72,20 +74,20 @@ class Investments(db.Model):
 
     @hybrid_property
     def market_value(self):
-        if self.close_price is None:
+        if self.last_known_price is None:
             return None
-        return self.close_price * self.volume
+        return self.last_known_price * self.volume
 
-    __mapper_arg__ = {"polymorphic_identity": "investment", "polymorphic on": volume}
+    __mapper_args__ = {"polymorphic_on": "type"}
 
 
 class ETF(db.Model):
     __tablename__ = "etfs"
-    etf_ticker = db.Column(db.String(5), nullable=False, unique=True, primary_key=True)
+    etf_ticker = db.Column(db.String(5), nullable=False, primary_key=True)
     currency_code = db.Column(db.String, db.ForeignKey("currencies.currency_code"), nullable=False)
     name = db.Column(db.String(50), nullable=False)
     google_ticker = db.Column(db.String(20), nullable=False)
-    isin = db.Column(db.String(12), nullable=False)
+    isin = db.Column(db.String(12), nullable=False, unique=True)
     ter = db.Column(db.Numeric(2, 2), nullable=False)
     distribution = db.Column(
         db.Enum("Accumulating", "Distributing", name="distribution"), nullable=False
@@ -118,30 +120,31 @@ class InvestedStocks(Investments):
     investment_id = db.Column(
         db.Integer, db.ForeignKey("investments.investment_id"), primary_key=True
     )
-    stock_ticker = db.Column(db.String(5), db.ForeignKey("stocks.stock_ticker"))
+
+    stock_ticker = db.Column(db.ForeignKey("stocks.stock_ticker"))
     stock_fk = db.relationship("Stock", back_populates="user_stocks")
 
-    __mapper_arg__ = {
-        "polymorphic_identity": "invested_stocks",
+    __mapper_args__ = {
+        "polymorphic_identity": "stocks",
     }
 
 
 class InvestedETFs(Investments):
     __tablename__ = "invested_etfs"
-
     investment_id = db.Column(
         db.Integer, db.ForeignKey("investments.investment_id"), primary_key=True
     )
 
-    etf_ticker = db.Column(db.String(5), db.ForeignKey("etfs.etf_ticker"))
+    etf_ticker = db.Column(db.ForeignKey("etfs.etf_ticker"))
     etf_fk = db.relationship("ETF", back_populates="user_etfs")
 
-    __mapper_arg__ = {"polymorphic_identity": "invested_etfs"}
+    __mapper_args__ = {"polymorphic_identity": "etfs"}
 
 
 class ETFSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = ETF
+        load_instance = True
         include_fk = True
 
     ter = ma.Float(places=2)
@@ -151,6 +154,43 @@ class ETFSchema(ma.SQLAlchemyAutoSchema):
 class UsersSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Users
+        load_instance = True
         include_fk = True
 
     password = ma.String(load_only=True)
+
+
+class StocksSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Stock
+        load_instance = True
+
+    dividend_yield = ma.Float(places=2)
+
+
+class InvestmentsSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Investments
+
+    investment_id = ma.auto_field(dump_only=True)
+    type = ma.Str(load_only=True)
+    open_datetime = ma.auto_field(dump_only=True, allow_none=True)
+    volume = ma.Float(places=2)
+    open_price = ma.Float(places=2)
+    close_price = ma.Float(places=2, allow_none=True)
+    last_known_price = ma.Float(places=2, allow_none=True)
+    market_value = ma.Float(places=2, dump_only=True, allow_none=True)
+    profit = ma.Float(places=2, dump_only=True, allow_none=True)
+    duration = ma.TimeDelta(precision="hours", dump_only=True, allow_none=True)
+
+
+class InvestedStocksSchema(InvestmentsSchema):
+    class Meta:
+        model = InvestedStocks
+        include_fk = True
+
+
+class InvestedETFsSchema(InvestmentsSchema):
+    class Meta:
+        model = InvestedETFs
+        include_fk = True
