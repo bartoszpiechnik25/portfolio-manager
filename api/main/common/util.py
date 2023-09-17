@@ -123,6 +123,65 @@ def create_etf_parser() -> reqparse.RequestParser:
     return etf_parser
 
 
+def create_stock_parser() -> reqparse.RequestParser:
+    parser = reqparse.RequestParser()
+    parser.add_argument(
+        "stock_ticker", type=str, required=True, help="Stock ticker must be provided!"
+    )
+    parser.add_argument(
+        "name", type=str, required=True, help="Name of the company must be provided!"
+    )
+    parser.add_argument("currency_code", type=str, required=True, help="Stock currency code")
+    parser.add_argument(
+        "google_ticker",
+        type=str,
+        required=True,
+        help="Stock google ticker to be used in Google Finance",
+    )
+    parser.add_argument("isin", type=str, required=True, help="Stock ISIN must be provided")
+    parser.add_argument(
+        "dividend_yield", type=float, required=True, help="Stock dividend yield must be provided"
+    )
+    return parser
+
+
+def create_invest_parser() -> reqparse.RequestParser:
+    invest_etf_parser = reqparse.RequestParser()
+    invest_etf_parser.add_argument("username", type=str, required=True, help="Username is required")
+    invest_etf_parser.add_argument("volume", type=float, required=True, help="Volume is required")
+    invest_etf_parser.add_argument(
+        "open_price", type=float, required=True, help="Open price is required"
+    )
+    invest_etf_parser.add_argument(
+        "open_datetime", type=str, required=False, help="Open datetime otherwise now() is used"
+    )
+    invest_etf_parser.add_argument(
+        "close_datetime", type=str, required=False, help="Close datetime otherwise None is used"
+    )
+    invest_etf_parser.add_argument(
+        "close_price", type=float, required=False, help="Close price otherwise None is used"
+    )
+    invest_etf_parser.add_argument(
+        "last_known_price",
+        type=float,
+        required=False,
+        help="Last known price otherwise None is used",
+    )
+    return invest_etf_parser
+
+
+def create_invest_etf_parser() -> reqparse.RequestParser:
+    parser = create_invest_parser()
+    parser.add_argument("etf_ticker", type=str, required=True, help="ETF ticker is required")
+    return parser
+
+
+def create_invest_stock_parser() -> reqparse.RequestParser:
+    parser = create_invest_parser()
+    parser.add_argument("stock_ticker", type=str, required=True, help="Stock ticker is required")
+    return parser
+
+
 def create_users():
     return [
         {
@@ -274,9 +333,75 @@ def create_stocks_data():
     ]
 
 
-# def create_investment_data():
-#     return [
-#         {
+def create_etf_investment_data():
+    return [
+        {
+            "username": "johndoe",
+            "etf_ticker": "VTI",
+            "volume": 100,
+            "open_price": 100.0,
+            "last_known_price": 110.0,
+        },
+        {
+            "username": "johndoe",
+            "etf_ticker": "IWDA",
+            "volume": 3,
+            "open_price": 85.34,
+            "last_known_price": 90.0,
+        },
+        {
+            "username": "janedoe",
+            "etf_ticker": "VUKE",
+            "volume": 10,
+            "open_price": 50.0,
+            "last_known_price": 45.0,
+        },
+        # {
+        #     "username": "bobsmith",
+        #     "etf_ticker": "VTI",
+        #     "volume": 42,
+        #     "open_price": 123.45,
+        #     "last_known_price": 130.0,
+        # },
+        {
+            "username": "sarahjones",
+            "etf_ticker": "IWDA",
+            "volume": 1,
+            "open_price": 85.34,
+            "last_known_price": 80.0,
+        },
+        {
+            "username": "mikebrown",
+            "etf_ticker": "VUKE",
+            "volume": 100,
+            "open_price": 50.0,
+            "last_known_price": 55.0,
+            "close_price": 90.23,
+            "close_datetime": "2024-03-07",
+        },
+    ]
 
-#         }
-#     ]
+
+def create_stock_investments_data():
+    return [
+        {
+            "username": "johndoe",
+            "stock_ticker": "AMZN",
+            "volume": 10,
+            "open_price": 100.0,
+            "last_known_price": 110.0,
+        },
+        {
+            "username": "mikebrown",
+            "stock_ticker": "GOOGL",
+            "volume": 3,
+            "open_price": 85.34,
+            "last_known_price": 90.0,
+        },
+        {
+            "username": "janedoe",
+            "stock_ticker": "TSLA",
+            "volume": 14,
+            "open_price": 50.0,
+        },
+    ]

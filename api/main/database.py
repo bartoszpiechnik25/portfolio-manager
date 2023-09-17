@@ -56,16 +56,15 @@ class Investments(db.Model):
     close_datetime = db.Column(db.TIMESTAMP(timezone=False), nullable=True)
     close_price = db.Column(db.Numeric(9, 2), nullable=True)
     last_known_price = db.Column(db.Numeric(9, 2), nullable=True)
-
     user_fk = db.relationship("Users", back_populates="investment")
-    # etf_investment_fk = db.relationship("InvestedETFs", back_populates="investment_fk")
-    # stock_investment_fk = db.relationship("InvestedStocks", back_populates="investment_fk")
 
     @hybrid_property
     def profit(self):
-        if self.last_known_market_value is None:
-            return None
-        return self.last_known_market_value - self.open_price
+        if self.close_price:
+            return (self.close_price - self.open_price) * self.volume
+        elif self.last_known_price and self.close_price is None:
+            return (self.last_known_price - self.open_price) * self.volume
+        return None
 
     @hybrid_property
     def duration(self):
@@ -75,16 +74,16 @@ class Investments(db.Model):
 
     @hybrid_property
     def market_value(self):
-        if self.close_price is None:
+        if self.last_known_price is None:
             return None
-        return self.close_price * self.volume
+        return self.last_known_price * self.volume
 
     __mapper_args__ = {"polymorphic_on": "type"}
 
 
 class ETF(db.Model):
     __tablename__ = "etfs"
-    etf_ticker = db.Column(db.String(5), nullable=False, unique=True, primary_key=True)
+    etf_ticker = db.Column(db.String(5), nullable=False, primary_key=True)
     currency_code = db.Column(db.String, db.ForeignKey("currencies.currency_code"), nullable=False)
     name = db.Column(db.String(50), nullable=False)
     google_ticker = db.Column(db.String(20), nullable=False)
@@ -126,7 +125,7 @@ class InvestedStocks(Investments):
     stock_fk = db.relationship("Stock", back_populates="user_stocks")
 
     __mapper_args__ = {
-        "polymorphic_identity": "invested_stocks",
+        "polymorphic_identity": "stocks",
     }
 
 
@@ -139,14 +138,14 @@ class InvestedETFs(Investments):
     etf_ticker = db.Column(db.ForeignKey("etfs.etf_ticker"))
     etf_fk = db.relationship("ETF", back_populates="user_etfs")
 
-    __mapper_args__ = {"polymorphic_identity": "invested_etfs"}
+    __mapper_args__ = {"polymorphic_identity": "etfs"}
 
 
 class ETFSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = ETF
-        include_fk = True
         load_instance = True
+        include_fk = True
 
     ter = ma.Float(places=2)
     fund_size = ma.Float(places=2, allow_none=True)
@@ -155,22 +154,43 @@ class ETFSchema(ma.SQLAlchemyAutoSchema):
 class UsersSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Users
-        include_fk = True
         load_instance = True
+        include_fk = True
 
     password = ma.String(load_only=True)
 
 
-class InvestedETFsSchema(ma.SQLAlchemyAutoSchema):
+class StocksSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        model = InvestedETFs
-        include_fk = True
+        model = Stock
         load_instance = True
 
+    dividend_yield = ma.Float(places=2)
+
+
+class InvestmentsSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Investments
+
     investment_id = ma.auto_field(dump_only=True)
-    type = ma.auto_field("type", dump_only=False, load_only=False)
-    # open_datetime = ma.auto_field(dump_only=True, allow_none=True)
+    type = ma.Str(load_only=True)
+    open_datetime = ma.auto_field(dump_only=True, allow_none=True)
     volume = ma.Float(places=2)
     open_price = ma.Float(places=2)
     close_price = ma.Float(places=2, allow_none=True)
     last_known_price = ma.Float(places=2, allow_none=True)
+    market_value = ma.Float(places=2, dump_only=True, allow_none=True)
+    profit = ma.Float(places=2, dump_only=True, allow_none=True)
+    duration = ma.TimeDelta(precision="hours", dump_only=True, allow_none=True)
+
+
+class InvestedStocksSchema(InvestmentsSchema):
+    class Meta:
+        model = InvestedStocks
+        include_fk = True
+
+
+class InvestedETFsSchema(InvestmentsSchema):
+    class Meta:
+        model = InvestedETFs
+        include_fk = True

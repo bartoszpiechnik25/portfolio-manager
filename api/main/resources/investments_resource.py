@@ -1,37 +1,84 @@
-from api.main.database import InvestedETFs, InvestedETFsSchema
+from api.main.database import (
+    InvestedETFs,
+    InvestedETFsSchema,
+    InvestedStocks,
+    InvestedStocksSchema,
+    Investments,
+    InvestmentsSchema,
+)
 from api.main.flask_app import db
-from sqlalchemy import insert, select
-from flask_restful import Resource, reqparse
-
-invest_etf_parser = reqparse.RequestParser()
-invest_etf_parser.add_argument("etf_ticker", type=str, required=True, help="ETF ticker is required")
-invest_etf_parser.add_argument("username", type=str, required=True, help="Username is required")
-invest_etf_parser.add_argument("volume", type=float, required=True, help="Volume is required")
-invest_etf_parser.add_argument(
-    "open_price", type=float, required=True, help="Open price is required"
-)
-invest_etf_parser.add_argument(
-    "open_datetime", type=str, required=False, help="Open datetime otherwise now() is used"
-)
-invest_etf_parser.add_argument(
-    "close_datetime", type=str, required=False, help="Close datetime otherwise None is used"
-)
-invest_etf_parser.add_argument(
-    "close_price", type=float, required=False, help="Close price otherwise None is used"
-)
-invest_etf_parser.add_argument(
-    "last_known_price", type=float, required=False, help="Last known price otherwise None is used"
-)
+from sqlalchemy import select, insert
+from flask import abort, request
+from flask_restful import Resource
+from api.main.database import Users
+from typing import Dict, Any
+from api.main.common.util import create_invest_etf_parser, create_invest_stock_parser
+from api.main.resources.asset_resource import find_financial_assets, TYPE_TO_TICKER_MAPPING
 
 
-class UserInvestedETFsResource(Resource):
-    def get(self):
-        etf = db.session.execute(select(InvestedETFs)).all()
-        sch = InvestedETFsSchema()
-        return [sch.dump(e[0]) for e in etf], 200
+MAPPINGS: Dict[str, Dict[str, Any]] = {
+    "etfs": {
+        "schema": InvestedETFsSchema,
+        "class": InvestedETFs,
+        "parser": create_invest_etf_parser(),
+    },
+    "stocks": {
+        "schema": InvestedStocksSchema,
+        "class": InvestedStocks,
+        "parser": create_invest_stock_parser(),
+    },
+    "all": {"class": Investments, "schema": InvestmentsSchema},
+}
 
-    def post(self):
-        args = invest_etf_parser.parse_args()
-        db.session.execute(insert(InvestedETFs), [args])
+
+class UserInvestedAssets(Resource):
+    def get(self, username: str):
+        user = db.session.execute(select(Users).where(Users.username == username)).first()
+
+        if user is None:
+            abort(400, f"User '{username}' not found in the database!")
+
+        args = request.args.to_dict()
+        investment_type = args["type"] if "type" in args else "all"
+
+        if investment_type in MAPPINGS:
+            cls = MAPPINGS[investment_type]["class"]
+            investments = db.session.execute(select(cls).where(cls.username == username)).all()
+        else:
+            abort(400, f"Type '{args['type']}' not supported!")
+
+        if not len(investments):
+            abort(
+                404,
+                f"User '{username}' did not invest in any"
+                + f" {investment_type.upper() if investment_type != 'all' else 'securities'}!",
+            )
+
+        return [MAPPINGS[investment[0].type].dump(investment[0]) for investment in investments], 200
+
+
+class Invest(Resource):
+    def post(self, username: str, investment_type: str):
+        user = db.session.execute(select(Users).where(Users.username == username)).first()
+        if not user:
+            abort(400, f"User '{username}' not found in the database!")
+
+        if investment_type not in MAPPINGS:
+            abort(400, f"Type '{investment_type}' not supported!")
+
+        args = MAPPINGS[investment_type]["parser"].parse_args()
+        args["username"] = username
+
+        asset = find_financial_assets(
+            args[TYPE_TO_TICKER_MAPPING[investment_type]], investment_type
+        )
+
+        if not asset:
+            abort(400, f"Security '{args[TYPE_TO_TICKER_MAPPING[investment_type]]}' not found!")
+
+        cls = MAPPINGS[investment_type]["class"]
+        inserted = db.session.execute(insert(cls).returning(cls), [args])
+        result = MAPPINGS[investment_type]["schema"]().dump(inserted.first()[0])
+
         db.session.commit()
-        return args, 201
+        return result, 200
