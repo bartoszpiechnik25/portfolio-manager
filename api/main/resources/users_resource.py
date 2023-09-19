@@ -12,7 +12,10 @@ class UserResource(Resource):
         self.user_schema = UsersSchema()
 
     def get(self, username: str):
-        db_user = db.session.execute(select(Users).where(Users.username == username)).first()
+        print(username)
+        db_user: Users = db.session.execute(
+            select(Users).where(Users.username == username)
+        ).one_or_none()
         if db_user is None:
             abort(404, "User not found")
         return self.user_schema.dump(db_user[0]), 200
@@ -28,7 +31,7 @@ class UserResource(Resource):
         if emails is not None:
             abort(400, f"User with email: {data['email']} already exists!")
 
-        user: Users = self.user_schema.load(data, transient=True)
+        user = Users(**data)
         db.session.add(user)
         db.session.commit()
         return self.user_schema.dump(user), 201

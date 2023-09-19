@@ -1,5 +1,6 @@
 import unittest
 from api.main.flask_app import db, CONFIG, create_app, db_init
+from api.main.database import Users
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
 CREATE TABLE management (department_id VARCHAR, head_id VARCHAR);
@@ -137,6 +138,28 @@ class TestUserController(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["username"], "test4")
+
+
+class TestPasswordHashing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.user1 = {"username": "test", "email": "something@example.com", "password": "testPasswd"}
+
+    def test_no_password_getter(self):
+        with self.assertRaises(AttributeError):
+            self.user1.password
+
+    def test_password_setter(self):
+        user = Users(**self.user1)
+        self.assertTrue(user.password_hash is not None)
+
+    def test_verify_valid_password(self):
+        user = Users(**self.user1)
+        self.assertTrue(user.verify_password(self.user1["password"]))
+
+    def test_verify_invalid_password(self):
+        user = Users(**self.user1)
+        self.assertFalse(user.verify_password("somepasswd"))
 
 
 if __name__ == "__main__":

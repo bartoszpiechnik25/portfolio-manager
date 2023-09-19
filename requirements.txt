@@ -7,3 +7,4 @@ flask
 flask_restful
 torch
 peft
+flask-bcrpyt

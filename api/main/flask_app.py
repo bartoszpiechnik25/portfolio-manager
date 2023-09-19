@@ -16,17 +16,12 @@ from api.main.common.util import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask_bcrypt import Bcrypt
 from sqlalchemy import insert
-from sqlalchemy.orm import DeclarativeBase
-
-
-class Base(DeclarativeBase):
-    pass
-
 
 db = SQLAlchemy()
-db._make_declarative_base(Base)
 ma = Marshmallow()
+bcrypt = Bcrypt()
 from api.main.resources.users_resource import UserResource, UsersResource
 from api.main.resources.asset_resource import Asset, Assets
 from api.main.resources.investments_resource import UserInvestedAssets, Invest
@@ -74,12 +69,13 @@ def db_init(app: Flask = None, api: Api = None):
 
     db.init_app(app)
     ma.init_app(app)
+    bcrypt.init_app(app)
 
     with app.app_context():
         db.metadata.drop_all(db.engine)
         db.create_all()
         db.session.execute(insert(Currency).values(create_currencies()))
-        db.session.execute(insert(Users).values(create_users()))
+        db.session.add_all([Users(**user) for user in create_users()])
         db.session.execute(insert(ETF).values(create_etfs()))
         db.session.execute(insert(Stock).values(create_stocks_data()))
         db.session.execute(insert(InvestedETFs), create_etf_investment_data())
