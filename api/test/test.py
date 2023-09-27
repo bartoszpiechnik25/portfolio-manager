@@ -1,5 +1,5 @@
 import unittest
-from api.main.flask_app import db, ENDPOINTS_CONFIG, create_app, db_init
+from api.main import db, ENDPOINTS_CONFIG, create_app
 from api.main.database import Users
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
@@ -19,8 +19,7 @@ The development server is provided for convenience,
 but is not designed to be particularly secure, stable, or efficient.
 See Deploying to Production for how to run in production.
 """
-app, api = create_app(test=True)
-db_init(app, api)
+app = create_app("test")
 
 
 class TestLLMController(unittest.TestCase):

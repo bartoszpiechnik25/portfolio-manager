@@ -51,6 +51,7 @@ class Config:
 class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = env["TEST_DATABASE_URI"]
+    DB_ONLY = False
 
 
 class DevConfig(Config):
