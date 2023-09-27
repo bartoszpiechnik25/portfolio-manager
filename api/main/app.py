@@ -1,4 +1,3 @@
-from api.main.flask_app import create_app, db_init
+from api.main import create_app
 
-app, api = create_app(db_only=True)
-db_init(app, api)
+app = create_app("dev")

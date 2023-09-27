@@ -1,4 +1,4 @@
-from api.main.flask_app import db, ma, bcrypt
+from api.main import db, ma, bcrypt
 from typing import List, Dict
 from sqlalchemy.ext.hybrid import hybrid_property
 
