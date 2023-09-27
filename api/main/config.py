@@ -1,10 +1,7 @@
 from dataclasses import dataclass
 import os
 import enum
-import dotenv
 from typing import Dict
-
-env = dotenv.dotenv_values(".env")
 
 api_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -38,7 +35,6 @@ class EndpointsConfig:
 
 
 class Config:
-    SECRET_KEY = env["SECRET_KEY"]
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     BUNDLE_ERRORS = True
     DB_ONLY = True
@@ -50,13 +46,13 @@ class Config:
 
 class TestConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = env["TEST_DATABASE_URI"]
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager_test"
     DB_ONLY = False
 
 
 class DevConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = env["DATABASE_URI"]
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
 
 
 class LLMType(enum.Enum):
