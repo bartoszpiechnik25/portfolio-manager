@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 import os
 import enum
+from typing import Dict
 
 api_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 @dataclass
-class Config:
+class EndpointsConfig:
     """
     Configuration for conveninent access to the models.
 
@@ -22,8 +23,6 @@ class Config:
     SQL_MODEL_PATH: str
     QA_MODEL_PATH: str
     SUMMARY_MODEL_PATH: str
-    DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
-    TEST_DATABASE_URI: str = "postgresql://postgres:siema@localhost:5432/portfolio_manager_test"
     USERS_ENDPOINT: str = "/api/v1/users"
     USER_ENDPOINT: str = "/api/v1/user"
     ASSET_ENDPOINT: str = "/api/v1/asset"
@@ -33,6 +32,27 @@ class Config:
     QA_ENDPOINT: str = "/api/v1/qa"
     TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
     SUMMARY_ENDPOINT: str = "/api/v1/summary"
+
+
+class Config:
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    BUNDLE_ERRORS = True
+    DB_ONLY = True
+
+    @staticmethod
+    def init_app(app):
+        pass
+
+
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager_test"
+    DB_ONLY = False
+
+
+class DevConfig(Config):
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
 
 
 class LLMType(enum.Enum):
@@ -59,15 +79,20 @@ def get_model_path(llm_type: str, project_dir: str) -> str:
     return llm_type_to_hub[llm_type] if not os.path.isdir(path) else path
 
 
-CONFIG = Config(
+ENDPOINTS_CONFIG = EndpointsConfig(
     SQL_MODEL_PATH=get_model_path(LLMType.SQL, p_dir),
     QA_MODEL_PATH=get_model_path(LLMType.QA, p_dir),
     SUMMARY_MODEL_PATH=get_model_path(LLMType.SUMMARY, p_dir),
 )
 
+CONFIG: Dict[str, Config] = {
+    "test": TestConfig,
+    "dev": DevConfig,
+}
+
 
 mapping = {
-    LLMType.QA: CONFIG.QA_MODEL_PATH,
-    LLMType.SQL: CONFIG.SQL_MODEL_PATH,
-    LLMType.SUMMARY: CONFIG.SUMMARY_MODEL_PATH,
+    LLMType.QA: ENDPOINTS_CONFIG.QA_MODEL_PATH,
+    LLMType.SQL: ENDPOINTS_CONFIG.SQL_MODEL_PATH,
+    LLMType.SUMMARY: ENDPOINTS_CONFIG.SUMMARY_MODEL_PATH,
 }

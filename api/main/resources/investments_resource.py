@@ -6,7 +6,7 @@ from api.main.database import (
     Investments,
     InvestmentsSchema,
 )
-from api.main.flask_app import db
+from api.main import db
 from sqlalchemy import select, insert
 from flask import abort, request
 from flask_restful import Resource
@@ -20,12 +20,12 @@ MAPPINGS: Dict[str, Dict[str, Any]] = {
     "etfs": {
         "schema": InvestedETFsSchema,
         "class": InvestedETFs,
-        "parser": create_invest_etf_parser(),
+        "parser": create_invest_etf_parser,
     },
     "stocks": {
         "schema": InvestedStocksSchema,
         "class": InvestedStocks,
-        "parser": create_invest_stock_parser(),
+        "parser": create_invest_stock_parser,
     },
     "all": {"class": Investments, "schema": InvestmentsSchema},
 }
@@ -33,7 +33,7 @@ MAPPINGS: Dict[str, Dict[str, Any]] = {
 
 class UserInvestedAssets(Resource):
     def get(self, username: str):
-        user = db.session.execute(select(Users).where(Users.username == username)).first()
+        user = db.session.scalars(select(Users).where(Users.username == username)).one_or_none()
 
         if user is None:
             abort(400, f"User '{username}' not found in the database!")
@@ -43,7 +43,7 @@ class UserInvestedAssets(Resource):
 
         if investment_type in MAPPINGS:
             cls = MAPPINGS[investment_type]["class"]
-            investments = db.session.execute(select(cls).where(cls.username == username)).all()
+            investments = db.session.scalars(select(cls).where(cls.username == username)).all()
         else:
             abort(400, f"Type '{args['type']}' not supported!")
 
@@ -54,7 +54,7 @@ class UserInvestedAssets(Resource):
                 + f" {investment_type.upper() if investment_type != 'all' else 'securities'}!",
             )
 
-        return [MAPPINGS[investment[0].type].dump(investment[0]) for investment in investments], 200
+        return [MAPPINGS[investment.type].dump(investment) for investment in investments], 200
 
 
 class Invest(Resource):
@@ -66,7 +66,7 @@ class Invest(Resource):
         if investment_type not in MAPPINGS:
             abort(400, f"Type '{investment_type}' not supported!")
 
-        args = MAPPINGS[investment_type]["parser"].parse_args()
+        args = MAPPINGS[investment_type]["parser"]().parse_args()
         args["username"] = username
 
         asset = find_financial_assets(
@@ -77,8 +77,8 @@ class Invest(Resource):
             abort(400, f"Security '{args[TYPE_TO_TICKER_MAPPING[investment_type]]}' not found!")
 
         cls = MAPPINGS[investment_type]["class"]
-        inserted = db.session.execute(insert(cls).returning(cls), [args])
-        result = MAPPINGS[investment_type]["schema"]().dump(inserted.first()[0])
+        inserted = db.session.scalars(insert(cls).returning(cls), [args]).first()
+        result = MAPPINGS[investment_type]["schema"]().dump(inserted)
 
         db.session.commit()
         return result, 200

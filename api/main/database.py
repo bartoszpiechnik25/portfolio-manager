@@ -1,4 +1,4 @@
-from api.main.flask_app import db, ma
+from api.main import db, ma, bcrypt
 from typing import List, Dict
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -15,15 +15,26 @@ class Users(db.Model):
     __tablename__ = "users"
     username = db.Column(db.String(40), primary_key=True)
     email = db.Column(db.String(255), nullable=False, unique=True)
-    password = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255), nullable=True, default=None)
     surname = db.Column(db.String(255), nullable=True, default=None)
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
-        return "User(username={}, password={}, email={}, name={}, surname={})".format(
-            self.username, self.password, self.email, self.name, self.surname
+        return "User(username={}, email={}, name={}, surname={})".format(
+            self.username, self.email, self.name, self.surname
         )
+
+    @property
+    def password(self):
+        raise AttributeError("Password is not a readable attribute!")
+
+    @password.setter
+    def password(self, paswd):
+        self.password_hash = bcrypt.generate_password_hash(paswd).decode("utf-8")
+
+    def verify_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
 
     @staticmethod
     def required_fields_in_request_body(args: dict) -> bool:
@@ -156,8 +167,7 @@ class UsersSchema(ma.SQLAlchemyAutoSchema):
         model = Users
         load_instance = True
         include_fk = True
-
-    password = ma.String(load_only=True)
+        exclude = ("password_hash",)
 
 
 class StocksSchema(ma.SQLAlchemyAutoSchema):

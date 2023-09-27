@@ -1,5 +1,6 @@
 import unittest
-from api.main.flask_app import db, CONFIG, create_app, db_init
+from api.main import db, ENDPOINTS_CONFIG, create_app
+from api.main.database import Users
 
 table = """CREATE TABLE department (creation VARCHAR, department_id VARCHAR);
 CREATE TABLE management (department_id VARCHAR, head_id VARCHAR);
@@ -18,8 +19,7 @@ The development server is provided for convenience,
 but is not designed to be particularly secure, stable, or efficient.
 See Deploying to Production for how to run in production.
 """
-app, api = create_app(test=True)
-db_init(app, api)
+app = create_app("test")
 
 
 class TestLLMController(unittest.TestCase):
@@ -29,7 +29,7 @@ class TestLLMController(unittest.TestCase):
 
     def test_sql_post(self):
         response = self.app.post(
-            CONFIG.TEX2SQL_ENDPOINT, json={"sql_table": table, "question": question}
+            ENDPOINTS_CONFIG.TEX2SQL_ENDPOINT, json={"sql_table": table, "question": question}
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("generated_sequence", response.json)
@@ -37,7 +37,7 @@ class TestLLMController(unittest.TestCase):
 
     def test_shouldReturnErrorWhenIncorrectData(self):
         response = self.app.post(
-            CONFIG.TEX2SQL_ENDPOINT,
+            ENDPOINTS_CONFIG.TEX2SQL_ENDPOINT,
             json={
                 "sql_table": table,
                 "question": question,
@@ -48,7 +48,7 @@ class TestLLMController(unittest.TestCase):
         self.assertIn("message", response.json)
 
     def test_summary_post(self):
-        response = self.app.post(CONFIG.SUMMARY_ENDPOINT, json={"text": article})
+        response = self.app.post(ENDPOINTS_CONFIG.SUMMARY_ENDPOINT, json={"text": article})
         self.assertEqual(response.status_code, 200)
         self.assertIn("generated_sequence", response.json)
         self.assertIsInstance(response.json["generated_sequence"], list)
@@ -68,11 +68,11 @@ class TestUserController(unittest.TestCase):
                 "surname": "test2",
             }
             cls.app.post(
-                CONFIG.USER_ENDPOINT,
+                ENDPOINTS_CONFIG.USER_ENDPOINT,
                 json=cls.user1,
             )
             cls.app.post(
-                CONFIG.USER_ENDPOINT,
+                ENDPOINTS_CONFIG.USER_ENDPOINT,
                 json=cls.user2,
             )
             db.session.commit()
@@ -84,59 +84,83 @@ class TestUserController(unittest.TestCase):
             db.session.commit()
 
     def test_add_existing_user(self):
-        response = self.app.post(CONFIG.USER_ENDPOINT, json=self.user1)
+        response = self.app.post(ENDPOINTS_CONFIG.USER_ENDPOINT, json=self.user1)
         self.assertEqual(response.status_code, 400)
 
     def test_get_all_users(self):
-        response = self.app.get(CONFIG.USERS_ENDPOINT)
+        response = self.app.get(ENDPOINTS_CONFIG.USERS_ENDPOINT)
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json, list)
         self.assertEqual(len(response.json), 8)
 
     def test_get_user1(self):
-        response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
+        response = self.app.get(f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/{self.user1['username']}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["email"], self.user1["email"])
 
     def test_get_user2(self):
-        response = self.app.get(f"{CONFIG.USER_ENDPOINT}/{self.user2['username']}")
+        response = self.app.get(f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/{self.user2['username']}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["username"], self.user2["username"])
 
     def test_get_non_existing_user(self):
-        response = self.app.get(f"{CONFIG.USER_ENDPOINT}/non_existing_user")
+        response = self.app.get(f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/non_existing_user")
         self.assertEqual(response.status_code, 404)
 
     def test_delete_non_existing_user(self):
-        response = self.app.delete(f"{CONFIG.USER_ENDPOINT}/non_existing_user")
+        response = self.app.delete(f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/non_existing_user")
         self.assertEqual(response.status_code, 404)
 
     def test_delete_user1(self):
-        response = self.app.delete(f"{CONFIG.USER_ENDPOINT}/{self.user1['username']}")
+        response = self.app.delete(f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/{self.user1['username']}")
         self.assertEqual(response.status_code, 204)
         self.app.post(
-            CONFIG.USER_ENDPOINT,
+            ENDPOINTS_CONFIG.USER_ENDPOINT,
             json=self.user1,
         )
 
     def test_modify_user2(self):
         response = self.app.put(
-            f"{CONFIG.USER_ENDPOINT}/{self.user2['username']}", json={"name": "test3"}
+            f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/{self.user2['username']}", json={"name": "test3"}
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["name"], "test3")
 
     def test_modify_non_existing_user(self):
-        response = self.app.put(f"{CONFIG.USER_ENDPOINT}/non_existing_user", json={"name": "test3"})
+        response = self.app.put(
+            f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/non_existing_user", json={"name": "test3"}
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_create_user_with_put(self):
         response = self.app.put(
-            f"{CONFIG.USER_ENDPOINT}/test4",
+            f"{ENDPOINTS_CONFIG.USER_ENDPOINT}/test4",
             json={"email": "sadlfsadf@sldf.com", "password": "test4", "username": "test4"},
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["username"], "test4")
+
+
+class TestPasswordHashing(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.user1 = {"username": "test", "email": "something@example.com", "password": "testPasswd"}
+
+    def test_no_password_getter(self):
+        with self.assertRaises(AttributeError):
+            self.user1.password
+
+    def test_password_setter(self):
+        user = Users(**self.user1)
+        self.assertTrue(user.password_hash is not None)
+
+    def test_verify_valid_password(self):
+        user = Users(**self.user1)
+        self.assertTrue(user.verify_password(self.user1["password"]))
+
+    def test_verify_invalid_password(self):
+        user = Users(**self.user1)
+        self.assertFalse(user.verify_password("somepasswd"))
 
 
 if __name__ == "__main__":

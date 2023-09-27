@@ -36,4 +36,4 @@ jobs:
     - name: Run tests
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/portfolio_manager_test
-      run: python -m unittest discover
+      run: python -m unittest discover -v
