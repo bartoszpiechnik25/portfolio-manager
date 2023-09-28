@@ -14,7 +14,7 @@ FIELDS = [
 
 class Users(UserMixin, db.Model):
     __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(40), unique=True, nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -23,21 +23,12 @@ class Users(UserMixin, db.Model):
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
-        return "User(username={}, email={}, name={}, surname={})".format(
-            self.username, self.email, self.name, self.surname
+        return "User(id={}, username={}, email={}, name={}, surname={})".format(
+            self.user_id, self.username, self.email, self.name, self.surname
         )
 
     def get_id(self):
-        return str(self.id)
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
-
-    def is_authenticated(self):
-        return True
+        return str(self.user_id)
 
     @property
     def password(self):
@@ -71,7 +62,7 @@ class Currency(db.Model):
 class Investments(db.Model):
     __tablename__ = "investments"
     investment_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
     type = db.Column(db.String(40), nullable=False)
     volume = db.Column(db.Numeric(9, 2), nullable=False)
     open_price = db.Column(db.Numeric(9, 2), nullable=False)

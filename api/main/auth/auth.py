@@ -38,7 +38,7 @@ def register():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.scalars(select(Users).where(Users.id == user_id)).first()
+    return db.session.scalars(select(Users).where(Users.user_id == user_id)).first()
 
 
 def login():
@@ -60,4 +60,4 @@ def login():
 def logout():
     logout_user()
     flash("You have been logged out.")
-    return redirect(url_for("index")), 200
+    return redirect(url_for("login"))
