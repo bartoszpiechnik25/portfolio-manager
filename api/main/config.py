@@ -33,6 +33,7 @@ class EndpointsConfig:
     TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
     SUMMARY_ENDPOINT: str = "/api/v1/summary"
     REGISTER_ENDPOINT: str = "/register"
+    LOGIN_ENDPOINT: str = "/login"
 
 
 class Config:

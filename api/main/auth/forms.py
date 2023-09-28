@@ -3,6 +3,7 @@ from wtforms import (
     StringField,
     PasswordField,
     SubmitField,
+    BooleanField,
 )
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Regexp
 from api.main import db
@@ -44,3 +45,30 @@ class RegistrationForm(FlaskForm):
     def validate_username(self, field):
         if db.session.execute(select(Users).where(Users.username == field.data)).one_or_none():
             raise ValidationError("Username already exists!")
+
+
+class LoginForm(FlaskForm):
+    username = StringField("username", validators=[DataRequired()])
+    password = PasswordField("password", validators=[DataRequired()])
+    submit = SubmitField("Log in")
+    remember_me = BooleanField("Remember me")
+
+    def validate_username(self, field):
+        if (
+            db.session.execute(select(Users).where(Users.username == field.data)).one_or_none()
+            is None
+        ):
+            raise ValidationError("Username does not exist!")
+
+    def validate_password(self, field):
+        if (
+            db.session.execute(
+                select(Users).where(Users.username == self.username.data)
+            ).one_or_none()
+            is not None
+        ):
+            user = db.session.scalars(
+                select(Users).where(Users.username == self.username.data)
+            ).first()
+            if not user.verify_password(field.data):
+                raise ValidationError("Incorrect password!")

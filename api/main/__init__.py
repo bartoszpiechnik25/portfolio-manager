@@ -18,8 +18,11 @@ from api.main.common.util import (
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_bcrypt import Bcrypt
+from flask_login import LoginManager
 from sqlalchemy import insert
 
+login_manager = LoginManager()
+login_manager.login_view = "login"
 db = SQLAlchemy()
 ma = Marshmallow()
 bcrypt = Bcrypt()
@@ -27,17 +30,13 @@ bcrypt = Bcrypt()
 from api.main.resources.users_resource import UserResource, UsersResource
 from api.main.resources.asset_resource import Asset, Assets
 from api.main.resources.investments_resource import UserInvestedAssets, Invest
-from api.main.auth.register import register
+from api.main.auth.auth import register, login, index, profile, logout
 
 
 def create_app(config_name: str):
     app = Flask(__name__)
     app.config.from_object(CONFIG[config_name])
     CONFIG[config_name].init_app(app)
-    app.register_error_handler(404, page_not_found)
-    app.add_url_rule(
-        ENDPOINTS_CONFIG.REGISTER_ENDPOINT, "register", register, methods=["GET", "POST"]
-    )
 
     from api.main.database import Currency, Users, ETF, Stock, InvestedETFs, InvestedStocks
 
@@ -46,6 +45,16 @@ def create_app(config_name: str):
     db.init_app(app)
     ma.init_app(app)
     bcrypt.init_app(app)
+    login_manager.init_app(app)
+
+    app.register_error_handler(404, page_not_found)
+    app.add_url_rule(
+        ENDPOINTS_CONFIG.REGISTER_ENDPOINT, "register", register, methods=["GET", "POST"]
+    )
+    app.add_url_rule(ENDPOINTS_CONFIG.LOGIN_ENDPOINT, "login", login, methods=["GET", "POST"])
+    app.add_url_rule("/logout", "logout", logout, methods=["GET", "POST"])
+    app.add_url_rule("/", "index", index, methods=["GET", "POST"])
+    app.add_url_rule("/profile", "profile", profile, methods=["GET", "POST"])
 
     with app.app_context():
         db.metadata.drop_all(db.engine)

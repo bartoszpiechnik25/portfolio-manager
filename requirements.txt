@@ -10,3 +10,4 @@ peft
 flask-bcrypt
 flask-wtf
 email_validator
+flask-login
