@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Register</title>
+    <style>
+      body {
+        font-family: 'Roboto', Arial;
+        background-color: #f2f2f2;
+        font-size: 1.5rem;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      form {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        width: 50%;
+        margin: 0 auto;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #333;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+      }
+      input[type="submit"] {
+        background-color: #4CAF50;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      input[type="submit"]:hover {
+        background-color: #45a049;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Register</h1>
+    <form method="POST" action="{{ url_for('register') }}">
+      {{ form.csrf_token }}
+      <label for="email">Email:</label>
+      {{ form.email(size=30) }}
+      {% for error in form.email.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="username">Username:</label>
+      {{ form.username(size=30) }}
+      {% for error in form.username.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="password">Password:</label>
+      {{ form.password(size=30) }}
+      {% for error in form.password.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="confirm_password">Confirm Password:</label>
+      {{ form.confirm_password(size=30) }}
+      {% for error in form.confirm_password.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="name">Name:</label>
+      {{ form.name(size=30) }}
+      {% for error in form.name.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="surname">Surname:</label>
+      {{ form.surname(size=30) }}
+      {% for error in form.surname.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <input type="submit" value="Register">
+    </form>
+  </body>
+</html>

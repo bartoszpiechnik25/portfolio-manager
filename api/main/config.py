@@ -32,10 +32,13 @@ class EndpointsConfig:
     QA_ENDPOINT: str = "/api/v1/qa"
     TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
     SUMMARY_ENDPOINT: str = "/api/v1/summary"
+    REGISTER_ENDPOINT: str = "/register"
+    LOGIN_ENDPOINT: str = "/login"
 
 
 class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "very_secret_key"
     BUNDLE_ERRORS = True
     DB_ONLY = True
 
