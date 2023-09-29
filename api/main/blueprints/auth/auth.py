@@ -1,9 +1,10 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from api.main.blueprints.forms import RegistrationForm, LoginForm
-from api.main.database import Users, UsersSchema, db
+from api.main.database import Users, db
 from api.main import login_manager
+from api.main.common.email_sending import send_mail
 from sqlalchemy import select
-from flask_login import login_user, login_required, logout_user
+from flask_login import login_user, login_required, logout_user, current_user
 
 
 auth = Blueprint("auth", __name__, url_prefix="/auth")
@@ -22,9 +23,49 @@ def register():
         )
         db.session.add(user)
         db.session.commit()
-        return UsersSchema().dump(user), 201
+        token = user.generate_confirmation_token()
+        send_mail(
+            subject="Welcome to the Portfolio Manager",
+            recipients=[user.email],
+            template="confirm",
+            user=user,
+            token=token,
+        )
+        # debug print
+        # print(url_for("auth.confirm", token=token, _external=True))
+        return redirect(url_for("auth.login"))
 
     return render_template("register.html", form=form), 200
+
+
+@auth.route("/confirm/<token>")
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        return redirect(url_for("index.profile"))
+    if current_user.confirm(token):
+        flash("Confirmation sucessful!")
+    else:
+        flash("Confirmation link is invalid or expired!")
+    return redirect(url_for("index.profile"))
+
+
+@auth.route("/confirm")
+@login_required
+def resend():
+    user: Users = current_user
+    token = user.generate_confirmation_token()
+    send_mail(
+        subject="Welcome to the Portfolio Manager",
+        recipients=[user.email],
+        template="confirm",
+        user=user,
+        token=token,
+    )
+    # debug print
+    # print(url_for("auth.confirm", token=token, _external=True))
+    flash("A new confirmation email has been sent to your email address.")
+    return redirect(url_for("index.profile"))
 
 
 @auth.route("/login", methods=["GET", "POST"])

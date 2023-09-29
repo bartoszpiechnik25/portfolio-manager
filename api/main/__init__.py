@@ -17,6 +17,7 @@ from api.main.common.util import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask_mail import Mail
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from sqlalchemy import insert
@@ -26,6 +27,7 @@ login_manager.login_view = "auth.login"
 db = SQLAlchemy()
 ma = Marshmallow()
 bcrypt = Bcrypt()
+mail = Mail()
 
 from api.main.resources.users_resource import UserResource, UsersResource
 from api.main.resources.asset_resource import Asset, Assets
@@ -46,6 +48,7 @@ def create_app(config_name: str):
     ma.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    mail.init_app(app)
 
     app.register_error_handler(404, page_not_found)
     app.register_blueprint(auth)

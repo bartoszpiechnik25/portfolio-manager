@@ -2,6 +2,8 @@ from api.main import db, ma, bcrypt
 from typing import List, Dict
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin
+from flask import current_app
+from itsdangerous import TimestampSigner, BadSignature, BadTimeSignature
 
 FIELDS = [
     "username",
@@ -20,6 +22,7 @@ class Users(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255), nullable=True, default=None)
     surname = db.Column(db.String(255), nullable=True, default=None)
+    confirmed = db.Column(db.Boolean, nullable=False, default=False)
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
@@ -29,6 +32,23 @@ class Users(UserMixin, db.Model):
 
     def get_id(self):
         return str(self.user_id)
+
+    def generate_confirmation_token(self):
+        s = TimestampSigner(current_app.config["SECRET_KEY"])
+        return s.sign(self.get_id()).decode("utf-8")
+
+    def confirm(self, token: str):
+        s = TimestampSigner(current_app.config["SECRET_KEY"])
+        try:
+            data = s.unsign(token, max_age=3600).decode("utf-8")
+        except (BadTimeSignature, BadSignature):
+            return False
+        if data != self.get_id():
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        db.session.commit()
+        return True
 
     @property
     def password(self):
