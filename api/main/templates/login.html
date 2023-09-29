@@ -57,7 +57,7 @@
   </head>
   <body>
     <h1>Login</h1>
-    <form method="POST" action="{{ url_for('login') }}">
+    <form method="POST" action="{{ url_for('auth.login') }}">
       {{ form.csrf_token }}
       <label for="username">Username:</label>
       {{ form.username(size=30) }}
