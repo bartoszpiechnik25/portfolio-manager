@@ -59,6 +59,7 @@ class TestUserController(unittest.TestCase):
     def setUpClass(cls):
         cls.app = app.test_client()
         with cls.app.application.app_context():
+            db.create_all()
             cls.user1 = {"username": "test", "email": "sjdsfdf@gmail.com", "password": "test"}
             cls.user2 = {
                 "username": "test2",

@@ -11,3 +11,5 @@ flask-bcrypt
 flask-wtf
 email_validator
 flask-login
+flask-mail
+flask-mailing

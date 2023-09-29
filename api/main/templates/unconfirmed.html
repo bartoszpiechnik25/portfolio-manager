@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Portfolio Manager</title>
+    <title>Email Confirmation Required</title>
     <style>
       body {
         font-family: 'Roboto', Arial;
@@ -69,13 +69,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&family=Roboto&display=swap" rel="stylesheet">
   </head>
   <body>
-    <h1>Portfolio Manager</h1>
-    <p>Welcome to Portfolio Manager! This web application allows you to keep track of your various investment assets.</p>
-    <p>To get started, please <a href="{{ url_for('auth.register') }}">register</a> or <a href="{{ url_for('auth.login') }}">login</a>.</p>
-    {% if current_user.is_authenticated %}
-    <a href="{{ url_for('auth.logout')}} "> logout  {{ current_user.username }}</a>
-    {% else %}
-    <footer>Hi {{ current_user.username }}!</footer>
-    {% endif %}
+    <h1>Email Confirmation Required</h1>
+    <p>Please confirm your email address to access this page.</p>
+    <p>If you have not received a confirmation email, please check your spam folder or <a href="{{ url_for('auth.resend') }}">resend confirmation email</a>.</p>
+    <p>If you continue to have issues, please contact support at <a href="mailto:support@example.com">support@example.com</a>.</p>
   </body>
 </html>

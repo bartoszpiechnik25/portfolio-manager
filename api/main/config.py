@@ -1,25 +1,15 @@
 from dataclasses import dataclass
 import os
 import enum
+import dotenv
 from typing import Dict
 
 api_dir = os.path.abspath(os.path.dirname(__file__))
+dotenv.load_dotenv()
 
 
 @dataclass
 class EndpointsConfig:
-    """
-    Configuration for conveninent access to the models.
-
-    Args:
-        SQL_MODEL_PATH (str): Path to the SQL model.
-        QA_MODEL_PATH (str): Path to the QA model.
-        SUMMARY_MODEL_PATH (str): Path to the summary model.
-        QA_ENDPOINT (str, optional): Endpoint for QA. Defaults to "/api/v1/qa".
-        TEX2SQL_ENDPOINT (str, optional): Endpoint for text2sql. Defaults to "/api/v1/text2sql".
-        SUMMARY_ENDPOINT (str, optional): Endpoint for summary. Defaults to "/api/v1/summary".
-    """
-
     SQL_MODEL_PATH: str
     QA_MODEL_PATH: str
     SUMMARY_MODEL_PATH: str
@@ -32,13 +22,22 @@ class EndpointsConfig:
     QA_ENDPOINT: str = "/api/v1/qa"
     TEX2SQL_ENDPOINT: str = "/api/v1/text2sql"
     SUMMARY_ENDPOINT: str = "/api/v1/summary"
-    REGISTER_ENDPOINT: str = "/register"
-    LOGIN_ENDPOINT: str = "/login"
+    REGISTER_ENDPOINT: str = "/auth/register"
+    LOGIN_ENDPOINT: str = "/auth/login"
 
 
+@dataclass
 class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.environ.get("SECRET_KEY") or "very_secret_key"
+    MAIL_SERVER = os.environ.get("MAIL_SERVER") or "smtp.gmail.com"
+    MAIL_PORT = os.environ.get("MAIL_PORT") or 465
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME") or ""
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") or ""
+    FLASK_MAIL_SENDER = "FlaskyPortfolioManager@no-reply.com"
+
     BUNDLE_ERRORS = True
     DB_ONLY = True
 

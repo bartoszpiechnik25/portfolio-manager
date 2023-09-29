@@ -17,20 +17,23 @@ from api.main.common.util import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from flask_mail import Mail
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from sqlalchemy import insert
 
 login_manager = LoginManager()
-login_manager.login_view = "login"
+login_manager.login_view = "auth.login"
 db = SQLAlchemy()
 ma = Marshmallow()
 bcrypt = Bcrypt()
+mail = Mail()
 
 from api.main.resources.users_resource import UserResource, UsersResource
 from api.main.resources.asset_resource import Asset, Assets
 from api.main.resources.investments_resource import UserInvestedAssets, Invest
-from api.main.auth.auth import register, login, index, profile, logout
+from api.main.blueprints.auth.auth import auth
+from api.main.blueprints.index import index
 
 
 def create_app(config_name: str):
@@ -40,21 +43,16 @@ def create_app(config_name: str):
 
     from api.main.database import Currency, Users, ETF, Stock, InvestedETFs, InvestedStocks
 
-    # api.init_app(app)
     api = Api(app)
     db.init_app(app)
     ma.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    mail.init_app(app)
 
     app.register_error_handler(404, page_not_found)
-    app.add_url_rule(
-        ENDPOINTS_CONFIG.REGISTER_ENDPOINT, "register", register, methods=["GET", "POST"]
-    )
-    app.add_url_rule(ENDPOINTS_CONFIG.LOGIN_ENDPOINT, "login", login, methods=["GET", "POST"])
-    app.add_url_rule("/logout", "logout", logout, methods=["GET", "POST"])
-    app.add_url_rule("/", "index", index, methods=["GET", "POST"])
-    app.add_url_rule("/profile", "profile", profile, methods=["GET", "POST"])
+    app.register_blueprint(auth)
+    app.register_blueprint(index)
 
     with app.app_context():
         db.metadata.drop_all(db.engine)
@@ -82,7 +80,6 @@ def create_app(config_name: str):
         Invest,
         f"{ENDPOINTS_CONFIG.INVEST_ENDPOINT}/<string:username>/<string:investment_type>",
     )
-    # api.add_resource(Register, ENDPOINTS_CONFIG.REGISTER_ENDPOINT)
 
     if not CONFIG[config_name].DB_ONLY:
         sql_model = LLM(LLMType.SQL)
