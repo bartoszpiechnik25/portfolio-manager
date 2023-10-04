@@ -125,11 +125,11 @@ class ETF(db.Model):
     google_ticker = db.Column(db.String(20), nullable=False)
     isin = db.Column(db.String(12), nullable=False, unique=True)
     ter = db.Column(db.Numeric(2, 2), nullable=False)
-    distribution = db.Column(
-        db.Enum("Accumulating", "Distributing", name="distribution"), nullable=False
+    distribution_policy = db.Column(
+        db.Enum("Accumulating", "Distributing", name="distribution_policy"), nullable=False
     )
-    replication_method = db.Column(
-        db.Enum("Physical", "Synthetic", "Physical(Sampling)", name="replication_method"),
+    replication = db.Column(
+        db.Enum("Full replication", "Sampling", "Swap-based", name="replication"),
         nullable=False,
     )
     fund_size = db.Column(db.Numeric(20, 2), nullable=True)

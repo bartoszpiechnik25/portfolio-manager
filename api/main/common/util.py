@@ -243,8 +243,8 @@ def create_etfs():
             "google_ticker": "NYSEARCA:VTI",
             "isin": "US9229087690",
             "ter": 0.03,
-            "distribution": "Accumulating",
-            "replication_method": "Physical",
+            "distribution_policy": "Accumulating",
+            "replication": "Full replication",
             "fund_size": 20000000000,
             "holdings": 3500,
             "top_holdings": [
@@ -262,8 +262,8 @@ def create_etfs():
             "google_ticker": "AMS:IWDA",
             "isin": "IE00B4L5Y983",
             "ter": 0.20,
-            "distribution": "Distributing",
-            "replication_method": "Physical",
+            "distribution_policy": "Accumulating",
+            "replication": "Sampling",
             "fund_size": 5000000000,
             "holdings": 1600,
             "top_holdings": [
@@ -281,8 +281,8 @@ def create_etfs():
             "google_ticker": "LON:VUKE",
             "isin": "IE00B810Q511",
             "ter": 0.09,
-            "distribution": "Distributing",
-            "replication_method": "Physical",
+            "distribution_policy": "Distributing",
+            "replication": "Full replication",
             "fund_size": 1000000000,
             "holdings": 100,
             "top_holdings": [
