@@ -1,11 +1,17 @@
 from dataclasses import dataclass
 import os
-import enum
+from enum import IntEnum, auto
 import dotenv
 from typing import Dict
 
 api_dir = os.path.abspath(os.path.dirname(__file__))
 dotenv.load_dotenv()
+
+
+@dataclass
+class InvestmentTypes(IntEnum):
+    ETF = auto()
+    STOCK = auto()
 
 
 @dataclass
@@ -54,13 +60,13 @@ class TestConfig(Config):
 
 class DevConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@db:5432/portfolio_manager"
 
 
-class LLMType(enum.Enum):
-    QA = 1
-    SQL = 2
-    SUMMARY = 3
+class LLMType(IntEnum):
+    QA = auto()
+    SQL = auto()
+    SUMMARY = auto()
 
 
 p_dir = os.path.dirname(api_dir).replace("/api", "")

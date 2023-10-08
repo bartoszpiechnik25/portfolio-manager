@@ -3,9 +3,9 @@ psycopg2-binary
 transformers
 flask-sqlalchemy
 marshmallow-sqlalchemy
-flask
+Flask==2.3.0
+Werkzeug==2.3.7
 flask_restful
-torch
 peft
 flask-bcrypt
 flask-wtf
@@ -13,3 +13,4 @@ email_validator
 flask-login
 flask-mail
 flask-mailing
+beautifulsoup4

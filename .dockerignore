@@ -1,0 +1,8 @@
+flan_t5/
+.gitignore
+.git/
+.pre-commit-config.yaml
+README.md
+.github/
+.dockerignore
+docker/
