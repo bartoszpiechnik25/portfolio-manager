@@ -60,7 +60,7 @@ class TestConfig(Config):
 
 class DevConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@localhost:5432/portfolio_manager"
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:siema@db:5432/portfolio_manager"
 
 
 class LLMType(IntEnum):
