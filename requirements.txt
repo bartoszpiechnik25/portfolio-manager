@@ -14,3 +14,4 @@ flask-login
 flask-mail
 flask-mailing
 beautifulsoup4
+selenium

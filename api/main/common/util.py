@@ -237,8 +237,9 @@ def create_currencies():
 def create_etfs():
     return [
         {
-            "currency_code": "USD",
+            "fund_currency": "USD",
             "name": "Vanguard Total Stock Market ETF",
+            "fund_provider": "Vanguard",
             "etf_ticker": "VTI",
             "google_ticker": "NYSEARCA:VTI",
             "isin": "US9229087690",
@@ -256,8 +257,9 @@ def create_etfs():
             ],
         },
         {
-            "currency_code": "EUR",
+            "fund_currency": "EUR",
             "name": "iShares Core MSCI World UCITS ETF",
+            "fund_provider": "iShares",
             "etf_ticker": "IWDA",
             "google_ticker": "AMS:IWDA",
             "isin": "IE00B4L5Y983",
@@ -275,8 +277,9 @@ def create_etfs():
             ],
         },
         {
-            "currency_code": "GBP",
+            "fund_currency": "GBP",
             "name": "Vanguard FTSE 100 UCITS ETF",
+            "fund_provider": "Vanguard",
             "etf_ticker": "VUKE",
             "google_ticker": "LON:VUKE",
             "isin": "IE00B810Q511",
@@ -293,6 +296,16 @@ def create_etfs():
                 {"name": "Diageo plc", "ticker": "DGE", "weight": 2.0},
             ],
         },
+    ]
+
+
+def create_etf_providers():
+    return [
+        {"provider_name": "Vanguard"},
+        {"provider_name": "iShares"},
+        {"provider_name": "Lyxor"},
+        {"provider_name": "Xtrackers"},
+        {"provider_name": "Amundi"},
     ]
 
 

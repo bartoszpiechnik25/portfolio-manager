@@ -2,6 +2,8 @@ from flask import Blueprint, render_template
 from flask_login import current_user, login_required
 from api.main.asset_scraper.scrapers import ETFScraper
 from api.main.asset_scraper import AssetTypes, ScraperConfig
+from api.main.database import ETFSchema
+from api.main import db
 
 
 index = Blueprint("index", __name__, url_prefix="/")
@@ -10,11 +12,13 @@ index = Blueprint("index", __name__, url_prefix="/")
 @index.route("/", methods=["GET"])
 def index_page():
     user_name = None
-    etf = ETFScraper.check_if_exists(
-        ScraperConfig(AssetTypes.ETF), query="xxtw", isin="IE00BM67HT60"
+    etf_scraper = ETFScraper.check_if_exists(
+        ScraperConfig(AssetTypes.ETF), query="xdwt", isin="IE00BM67HT60"
     )
-    print(type(etf))
-    etf.scrape()
+    schema = ETFSchema()
+    etf = schema.load(etf_scraper.scrape(), transient=True)
+    db.session.add(etf)
+    db.session.commit()
     if current_user.is_authenticated:
         user_name = current_user.username
     return render_template("index.html", user_name=user_name), 200

@@ -61,3 +61,7 @@ class AssetScraper(ABC):
     @abstractmethod
     def scrape(self):
         pass
+
+    @abstractmethod
+    def _create_soup(self):
+        pass
