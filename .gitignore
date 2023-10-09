@@ -163,3 +163,4 @@ models/
 *.ipynb
 api/main/database.py
 .flaskenv
+test.py

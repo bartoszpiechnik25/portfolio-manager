@@ -120,23 +120,31 @@ class Investments(db.Model):
 class ETF(db.Model):
     __tablename__ = "etfs"
     etf_ticker = db.Column(db.String(5), nullable=False, primary_key=True)
-    currency_code = db.Column(db.String, db.ForeignKey("currencies.currency_code"), nullable=False)
-    name = db.Column(db.String(50), nullable=False)
-    google_ticker = db.Column(db.String(20), nullable=False)
+    fund_currency = db.Column(db.String, db.ForeignKey("currencies.currency_code"), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    google_ticker = db.Column(db.String(20), nullable=True)
     isin = db.Column(db.String(12), nullable=False, unique=True)
-    ter = db.Column(db.Numeric(2, 2), nullable=False)
+    ter = db.Column(db.Numeric(6, 2), nullable=False)
+    volatility_1yr = db.Column(db.Numeric(6, 2), nullable=True)
     distribution_policy = db.Column(
         db.Enum("Accumulating", "Distributing", name="distribution_policy"), nullable=False
     )
-    replication = db.Column(
-        db.Enum("Full replication", "Sampling", "Swap-based", name="replication"),
-        nullable=False,
-    )
+    distribution_frequency = db.Column(db.String(20), nullable=True)
+    replication = db.Column(db.String(30), nullable=False)
     fund_size = db.Column(db.Numeric(20, 2), nullable=True)
+    # fund_size_currency = db.Column(db.String, db.ForeignKey("currencies.currency_code"))
+    fund_provider = db.Column(db.String, db.ForeignKey("etf_providers.provider_name"))
     holdings = db.Column(db.Integer, nullable=True)
     top_holdings = db.Column(db.JSON, nullable=True)
     currency = db.relationship("Currency", back_populates="etf")
     user_etfs = db.relationship("InvestedETFs", back_populates="etf_fk")
+    fund_provider_fk = db.relationship("ETFProviders", back_populates="etf_provider_fk")
+
+
+class ETFProviders(db.Model):
+    __tablename__ = "etf_providers"
+    provider_name = db.Column(db.String(50), primary_key=True)
+    etf_provider_fk = db.relationship("ETF", back_populates="fund_provider_fk")
 
 
 class Stock(db.Model):
@@ -185,6 +193,7 @@ class ETFSchema(ma.SQLAlchemyAutoSchema):
 
     ter = ma.Float(places=2)
     fund_size = ma.Float(places=2, allow_none=True)
+    volatility_1yr = ma.Float(places=2)
 
 
 class UsersSchema(ma.SQLAlchemyAutoSchema):

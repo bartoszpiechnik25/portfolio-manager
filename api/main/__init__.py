@@ -14,6 +14,7 @@ from api.main.common.util import (
     create_stocks_data,
     create_etf_investment_data,
     create_stock_investments_data,
+    create_etf_providers,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -41,7 +42,15 @@ def create_app(config_name: str):
     app.config.from_object(CONFIG[config_name])
     CONFIG[config_name].init_app(app)
 
-    from api.main.database import Currency, Users, ETF, Stock, InvestedETFs, InvestedStocks
+    from api.main.database import (
+        Currency,
+        Users,
+        ETF,
+        Stock,
+        InvestedETFs,
+        InvestedStocks,
+        ETFProviders,
+    )
 
     api = Api(app)
     db.init_app(app)
@@ -59,6 +68,7 @@ def create_app(config_name: str):
         db.create_all()
         db.session.execute(insert(Currency).values(create_currencies()))
         db.session.add_all([Users(**user) for user in create_users()])
+        db.session.execute(insert(ETFProviders).values(create_etf_providers()))
         db.session.execute(insert(ETF).values(create_etfs()))
         db.session.execute(insert(Stock).values(create_stocks_data()))
         db.session.execute(insert(InvestedETFs), create_etf_investment_data())
