@@ -91,7 +91,7 @@ class ETFScraper(AssetScraper):
             "holdings": int(etf_profile_body_data["holdings"])
             if "holdings" in etf_profile_body_data
             else None,
-            "replication": details["replication"],
+            "replication": etf_profile_body_data["replication"],
         }
 
         return details_to_db

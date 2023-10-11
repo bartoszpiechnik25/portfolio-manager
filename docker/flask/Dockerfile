@@ -8,6 +8,7 @@ RUN wget 'https://www.googleapis.com/download/storage/v1/b/chromium-browser-snap
  && chmod +x /usr/bin/chromedriver
 
 WORKDIR /app
+
 COPY ../.. /app
 RUN pip install --no-cache-dir -r requirements.txt
 

@@ -15,6 +15,7 @@ from api.main.common.util import (
     create_etf_investment_data,
     create_stock_investments_data,
     create_etf_providers,
+    create_replication_methods,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -50,6 +51,7 @@ def create_app(config_name: str):
         InvestedETFs,
         InvestedStocks,
         ETFProviders,
+        ETFReplicationMethods,
     )
 
     api = Api(app)
@@ -67,6 +69,7 @@ def create_app(config_name: str):
         db.metadata.drop_all(db.engine)
         db.create_all()
         db.session.execute(insert(Currency).values(create_currencies()))
+        db.session.execute(insert(ETFReplicationMethods).values(create_replication_methods()))
         db.session.add_all([Users(**user) for user in create_users()])
         db.session.execute(insert(ETFProviders).values(create_etf_providers()))
         db.session.execute(insert(ETF).values(create_etfs()))
