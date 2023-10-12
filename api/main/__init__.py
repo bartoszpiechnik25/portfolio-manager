@@ -36,6 +36,7 @@ from api.main.resources.asset_resource import Asset, Assets
 from api.main.resources.investments_resource import UserInvestedAssets, Invest
 from api.main.blueprints.auth.auth import auth
 from api.main.blueprints.index import index
+from api.main.blueprints.asset import asset
 
 
 def create_app(config_name: str):
@@ -64,6 +65,7 @@ def create_app(config_name: str):
     app.register_error_handler(404, page_not_found)
     app.register_blueprint(auth)
     app.register_blueprint(index)
+    app.register_blueprint(asset)
 
     with app.app_context():
         db.metadata.drop_all(db.engine)

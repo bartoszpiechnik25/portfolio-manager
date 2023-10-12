@@ -4,6 +4,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin
 from flask import current_app
 from itsdangerous import TimestampSigner, BadSignature, BadTimeSignature
+from api.main.common.util import create_etf_parser, create_stock_parser
+from api.main.config import AssetTypes
 
 FIELDS = [
     "username",
@@ -22,7 +24,7 @@ class Users(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255), nullable=True, default=None)
     surname = db.Column(db.String(255), nullable=True, default=None)
-    confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed = db.Column(db.Boolean, nullable=False, default=True)
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
@@ -250,3 +252,11 @@ class InvestedETFsSchema(InvestmentsSchema):
     class Meta:
         model = InvestedETFs
         include_fk = True
+
+
+TYPE_TO_TICKER_MAPPING = {AssetTypes.ETF: "etf_ticker", AssetTypes.STOCK: "stock_ticker"}
+
+ASSET_TYPE_MAPPING: Dict[AssetTypes, Dict] = {
+    AssetTypes.ETF: {"class": ETF, "parser": create_etf_parser, "schema": ETFSchema},
+    AssetTypes.STOCK: {"class": Stock, "parser": create_stock_parser, "schema": StocksSchema},
+}
