@@ -4,6 +4,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from flask_login import UserMixin
 from flask import current_app
 from itsdangerous import TimestampSigner, BadSignature, BadTimeSignature
+from api.main.common.util import create_etf_parser, create_stock_parser
+from api.main.config import AssetTypes
 
 FIELDS = [
     "username",
@@ -22,7 +24,7 @@ class Users(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(255), nullable=True, default=None)
     surname = db.Column(db.String(255), nullable=True, default=None)
-    confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed = db.Column(db.Boolean, nullable=False, default=True)
     investment = db.relationship("Investments", back_populates="user_fk")
 
     def __repr__(self) -> str:
@@ -130,21 +132,33 @@ class ETF(db.Model):
         db.Enum("Accumulating", "Distributing", name="distribution_policy"), nullable=False
     )
     distribution_frequency = db.Column(db.String(20), nullable=True)
-    replication = db.Column(db.String(30), nullable=False)
     fund_size = db.Column(db.Numeric(20, 2), nullable=True)
-    # fund_size_currency = db.Column(db.String, db.ForeignKey("currencies.currency_code"))
     fund_provider = db.Column(db.String, db.ForeignKey("etf_providers.provider_name"))
+    replication_method_id = db.Column(
+        db.ForeignKey("etf_replication_methods.replication_method_id")
+    )
     holdings = db.Column(db.Integer, nullable=True)
     top_holdings = db.Column(db.JSON, nullable=True)
     currency = db.relationship("Currency", back_populates="etf")
     user_etfs = db.relationship("InvestedETFs", back_populates="etf_fk")
     fund_provider_fk = db.relationship("ETFProviders", back_populates="etf_provider_fk")
+    replication_method_fk = db.relationship(
+        "ETFReplicationMethods", back_populates="etf_replication_method_fk"
+    )
 
 
 class ETFProviders(db.Model):
     __tablename__ = "etf_providers"
     provider_name = db.Column(db.String(50), primary_key=True)
     etf_provider_fk = db.relationship("ETF", back_populates="fund_provider_fk")
+
+
+class ETFReplicationMethods(db.Model):
+    __tablename__ = "etf_replication_methods"
+    replication_method_id = db.Column(db.SmallInteger, primary_key=True, autoincrement=True)
+    replication_method = db.Column(db.String(70), unique=True, nullable=False)
+    replication_method_description = db.Column(db.Text)
+    etf_replication_method_fk = db.relationship("ETF", back_populates="replication_method_fk")
 
 
 class Stock(db.Model):
@@ -238,3 +252,11 @@ class InvestedETFsSchema(InvestmentsSchema):
     class Meta:
         model = InvestedETFs
         include_fk = True
+
+
+TYPE_TO_TICKER_MAPPING = {AssetTypes.ETF: "etf_ticker", AssetTypes.STOCK: "stock_ticker"}
+
+ASSET_TYPE_MAPPING: Dict[AssetTypes, Dict] = {
+    AssetTypes.ETF: {"class": ETF, "parser": create_etf_parser, "schema": ETFSchema},
+    AssetTypes.STOCK: {"class": Stock, "parser": create_stock_parser, "schema": StocksSchema},
+}

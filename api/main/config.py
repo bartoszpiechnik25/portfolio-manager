@@ -69,6 +69,11 @@ class LLMType(IntEnum):
     SUMMARY = auto()
 
 
+class AssetTypes(IntEnum):
+    ETF = 1
+    STOCK = 2
+
+
 p_dir = os.path.dirname(api_dir).replace("/api", "")
 
 

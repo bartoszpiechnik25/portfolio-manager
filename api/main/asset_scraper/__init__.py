@@ -1,10 +1,10 @@
-from abc import abstractclassmethod, abstractmethod, ABC
+from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from api.main import db
 from sqlalchemy import select
 from api.main.database import Investments
-from typing import Dict
-from enum import IntEnum
+from typing import Dict, Any
+from api.main.config import AssetTypes
 from flask import current_app
 
 
@@ -22,11 +22,6 @@ def get_types_from_DB() -> Dict[str, int]:
         attr_name = value[:-1].upper()
         types.append(attr_name)
     return types
-
-
-class AssetTypes(IntEnum):
-    ETF = 1
-    STOCK = 2
 
 
 url_mapper = {
@@ -54,12 +49,13 @@ class ScraperConfig:
 
 
 class AssetScraper(ABC):
-    @abstractclassmethod
-    def check_if_exists(cls, config: ScraperConfig, **kwargs):
+    @classmethod
+    @abstractmethod
+    def check_if_exists(cls, config: ScraperConfig, **kwargs) -> "AssetScraper":
         pass
 
     @abstractmethod
-    def scrape(self):
+    def scrape(self) -> Dict[str, Any]:
         pass
 
     @abstractmethod

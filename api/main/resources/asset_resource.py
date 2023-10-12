@@ -1,17 +1,16 @@
-from api.main.database import ETF, ETFSchema, Stock, StocksSchema
+from api.main.database import (
+    ETF,
+    ETFSchema,
+    Stock,
+    StocksSchema,
+    ASSET_TYPE_MAPPING,
+    TYPE_TO_TICKER_MAPPING,
+)
 from api.main import db
-from api.main.common.util import create_etf_parser, create_stock_parser
 from flask import abort, request
 from flask_restful import Resource
 from sqlalchemy import select
 from typing import Union
-
-TYPE_TO_TICKER_MAPPING = {"etfs": "etf_ticker", "stocks": "stock_ticker"}
-
-ASSET_TYPE_MAPPING = {
-    "etfs": {"class": ETF, "parser": create_etf_parser, "schema": ETFSchema},
-    "stocks": {"class": Stock, "parser": create_stock_parser, "schema": StocksSchema},
-}
 
 
 def map_str_to_math_operator(operator: str, attr_name: str, val2: Union[int, float]):

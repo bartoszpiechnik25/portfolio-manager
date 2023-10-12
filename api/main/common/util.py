@@ -245,7 +245,7 @@ def create_etfs():
             "isin": "US9229087690",
             "ter": 0.03,
             "distribution_policy": "Accumulating",
-            "replication": "Full replication",
+            "replication_method_id": 1,
             "fund_size": 20000000000,
             "holdings": 3500,
             "top_holdings": [
@@ -265,7 +265,7 @@ def create_etfs():
             "isin": "IE00B4L5Y983",
             "ter": 0.20,
             "distribution_policy": "Accumulating",
-            "replication": "Sampling",
+            "replication_method_id": 2,
             "fund_size": 5000000000,
             "holdings": 1600,
             "top_holdings": [
@@ -285,7 +285,7 @@ def create_etfs():
             "isin": "IE00B810Q511",
             "ter": 0.09,
             "distribution_policy": "Distributing",
-            "replication": "Full replication",
+            "replication_method_id": 1,
             "fund_size": 1000000000,
             "holdings": 100,
             "top_holdings": [
@@ -299,6 +299,24 @@ def create_etfs():
     ]
 
 
+def create_replication_methods():
+    return [
+        {
+            "replication_method": "Full replication",
+            "replication_method_description": "The index is replicated 1:1.",
+        },
+        {
+            "replication_method": "Sampling",
+            "replication_method_description": "The ETF holds a selection of securities.",
+        },
+        {
+            "replication_method": "Swap-based",
+            "replication_method_description": "The index replicates the index"
+            + " by using a financial derivative (swap).",
+        },
+    ]
+
+
 def create_etf_providers():
     return [
         {"provider_name": "Vanguard"},
@@ -306,6 +324,7 @@ def create_etf_providers():
         {"provider_name": "Lyxor"},
         {"provider_name": "Xtrackers"},
         {"provider_name": "Amundi"},
+        {"provider_name": "Invesco"},
     ]
 
 

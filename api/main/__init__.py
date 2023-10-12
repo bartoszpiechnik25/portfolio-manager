@@ -15,6 +15,7 @@ from api.main.common.util import (
     create_etf_investment_data,
     create_stock_investments_data,
     create_etf_providers,
+    create_replication_methods,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -35,6 +36,7 @@ from api.main.resources.asset_resource import Asset, Assets
 from api.main.resources.investments_resource import UserInvestedAssets, Invest
 from api.main.blueprints.auth.auth import auth
 from api.main.blueprints.index import index
+from api.main.blueprints.asset import asset
 
 
 def create_app(config_name: str):
@@ -50,6 +52,7 @@ def create_app(config_name: str):
         InvestedETFs,
         InvestedStocks,
         ETFProviders,
+        ETFReplicationMethods,
     )
 
     api = Api(app)
@@ -62,11 +65,13 @@ def create_app(config_name: str):
     app.register_error_handler(404, page_not_found)
     app.register_blueprint(auth)
     app.register_blueprint(index)
+    app.register_blueprint(asset)
 
     with app.app_context():
         db.metadata.drop_all(db.engine)
         db.create_all()
         db.session.execute(insert(Currency).values(create_currencies()))
+        db.session.execute(insert(ETFReplicationMethods).values(create_replication_methods()))
         db.session.add_all([Users(**user) for user in create_users()])
         db.session.execute(insert(ETFProviders).values(create_etf_providers()))
         db.session.execute(insert(ETF).values(create_etfs()))

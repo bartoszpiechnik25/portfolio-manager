@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Add Asset</title>
+    <style>
+      body {
+        font-family: 'Roboto', Arial;
+        background-color: #f2f2f2;
+        font-size: 1rem;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        font-size: 35px;
+      }
+      form {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 20px;
+        width: 50%;
+        margin: 0 auto;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #333;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+      }
+      input[type="submit"] {
+        background-color: #4CAF50;
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      input[type="submit"]:hover {
+        background-color: #45a049;
+      }
+      .error {
+        color: red;
+      }
+      label {
+        font-size: 17px;
+        font-weight: bold;
+      }
+      label[for="isin"], label[for="ticker"] {
+        font-size: 18px;
+        font-weight: bold;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville&family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <h1>Add Asset</h1>
+    <form method="POST" action="{{ url_for('asset.add_asset') }}">
+      {{ form.csrf_token }}
+      <label for="asset_type">Asset Type:</label>
+      {{ form.asset_type }}
+      {% for error in form.asset_type.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <br>
+      <br>
+      <label for="ticker">Ticker:</label>
+      {{ form.ticker(size=20) }}
+      {% for error in form.ticker.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      <label for="isin">ISIN:</label>
+      {{ form.isin(size=30) }}
+      {% for error in form.isin.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% if category == 'error' %}
+            <div class="error">{{ message }}</div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% endwith %}
+      <br>
+      <input type="submit" value="Add Asset">
+    </form>
+  </body>
+</html>

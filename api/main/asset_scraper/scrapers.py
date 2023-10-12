@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from requests import get
-from api.main.asset_scraper import AssetScraper, ScraperConfig
+from api.main.asset_scraper import AssetScraper, ScraperConfig, AssetTypes
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,7 +18,18 @@ class ETFScraper(AssetScraper):
 
     @classmethod
     def check_if_exists(cls, config: ScraperConfig, **url_kwargs) -> "ETFScraper":
-        print(config.URLS["details_url"].format(**url_kwargs))
+        """
+        Checks if ETF with given ticker and ISIN exists.
+
+        Args:
+            config (ScraperConfig): Config for specific asset type.
+
+        Raises:
+            ValueError: If couldn't find ETF with given data.
+
+        Returns:
+            ETFScraper: Scraper object.
+        """
         response = get(config.URLS["details_url"].format(**url_kwargs), allow_redirects=False)
         if response.status_code == 302:
             raise ValueError(f"Could not find ETF with {url_kwargs}")
@@ -30,6 +41,9 @@ class ETFScraper(AssetScraper):
         )
 
     def _create_soup(self):
+        """
+        Creates selenium webdriver for scraping and creates bs4 soup.
+        """
         opt = webdriver.ChromeOptions()
         opt.add_argument("--disable-gpu")
         opt.add_argument("--disable-extensions")
@@ -47,7 +61,13 @@ class ETFScraper(AssetScraper):
         self.soup = BeautifulSoup(driver.page_source, "html.parser")
         driver.quit()
 
-    def _find_top_holdings(self):
+    def _find_top_holdings(self) -> Dict[str, str]:
+        """
+        Finds top holdings of an ETF fund.
+
+        Returns:
+            Dict[str, str]: Top 10 holdings of a fund in format company_name: percentage.
+        """
         holdings = {}
         for tag in self.soup.find_all("div", {"class": "columns-2"}):
             company = tag.select("table.table.mb-0 tbody tr a span")
@@ -59,7 +79,13 @@ class ETFScraper(AssetScraper):
             holdings = {k: v for k, v in zip(companies, percentages)}
         return holdings
 
-    def _find_etf_details(self):
+    def _find_etf_details(self) -> Dict[str, Union[str, int]]:
+        """
+        Gather details about an ETF fund.
+
+        Returns:
+            Dict[str, Union[str, int]]: Fund details.
+        """
         details = {}
         table = self.soup.find("table", {"class": "table etf-data-table"})
         for tr in table.select("table tbody tr"):
@@ -78,7 +104,6 @@ class ETFScraper(AssetScraper):
         name = self.soup.find("h1", id="etf-title").get_text(strip=True)
         details_to_db = {
             "fund_size": int(float(size_data[1].replace(",", ".")) * 1e9),
-            # "fund_size_currency": size_data[0],
             "fund_currency": details["fund_currency"],
             "fund_provider": details["fund_provider"],
             "distribution_policy": details["distribution_policy"],
@@ -91,23 +116,21 @@ class ETFScraper(AssetScraper):
             "holdings": int(etf_profile_body_data["holdings"])
             if "holdings" in etf_profile_body_data
             else None,
-            "replication": details["replication"],
+            "replication": etf_profile_body_data["replication"],
         }
 
         return details_to_db
 
     def scrape(self) -> Dict[str, Any]:
+        """
+        Scrap the data.
+
+        Returns:
+            Dict[str, Any]: ETF details that can be passed to ORM ETF class to create new object.
+        """
         etf_details = self._find_etf_details()
         etf_details["top_holdings"] = self._find_top_holdings()
         return etf_details
 
 
-# if __name__ == "__main__":
-# response = get(
-#     "https://www.justetf.com/en/etf-profile.html?query=xdwt&query=&groupField=index&from=search&isin=IE00BM67HT60"
-# )
-# soup = BeautifulSoup(response.content, "html.parser")
-# print(soup.prettify())
-# for c in soup.find_all("div", class_="d-flex d-flex-column", recursive=True):
-# print(c.get_text("|", strip=True), end="\n\n")
-# print(c)
+ASSET_TYPE_TO_SCRAPER_CLASS: Dict[AssetTypes, AssetScraper] = {AssetTypes.ETF: ETFScraper}
